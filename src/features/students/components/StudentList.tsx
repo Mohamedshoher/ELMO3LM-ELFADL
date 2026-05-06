@@ -49,7 +49,7 @@ export default function StudentList({ groupId, customTitle }: StudentListProps) 
     const queryClient = useQueryClient();
 
     const myGroupsIds = useMemo(() => {
-        if (!groups) return undefined;
+        if (!groups) return [];
         return groups.filter(g => {
             if (user?.role === 'teacher') return g.teacherId === user.teacherId;
             if (user?.role === 'supervisor') {
