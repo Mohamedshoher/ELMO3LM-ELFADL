@@ -84,6 +84,7 @@ export const useTeacherAttendance = (teacherId?: string, monthKey?: string) => {
 export const useAllTeachersAttendance = (monthKey: string) => {
     return useQuery({
         queryKey: ['all-teachers-attendance', monthKey], // المفتاح الفريد للاستعلام
-        queryFn: () => getAllTeachersAttendance(monthKey), // الدالة التي تجلب البيانات من الخدمة (Service)
+        queryFn: () => monthKey ? getAllTeachersAttendance(monthKey) : Promise.resolve({}), // الدالة التي تجلب البيانات من الخدمة (Service)
+        enabled: !!monthKey && monthKey.includes('-'), // تفعيل الاستعلام فقط إذا توفر مفتاح شهر صالح
     });
 };

@@ -236,7 +236,8 @@ export default function TeacherDetailModal({
         deductions,
         paymentsHistory,
         selectedMonthRaw,
-        isSettlementMode
+        isSettlementMode,
+        teachers
     );
 
     // استخراج النتائج من الخطاف (Dashboard Hook)
@@ -273,7 +274,10 @@ export default function TeacherDetailModal({
         totalPaid,
         totalEntitlement,
         remainingToPay,
-        dailyRate
+        dailyRate,
+        isPartnership,
+        partnershipPercentage,
+        totalCollectedForGroup
     } = salaryStats;
 
     // ==========================================
@@ -702,6 +706,10 @@ export default function TeacherDetailModal({
                         deleteSalaryMutation={deleteSalaryMutation}
                         isSettlementMode={isSettlementMode}
                         setIsSettlementMode={setIsSettlementMode}
+                        isPartnership={isPartnership}
+                        partnershipPercentage={partnershipPercentage}
+                        totalCollectedForGroup={totalCollectedForGroup}
+                        expectedPartnershipSalary={salaryStats.expectedPartnershipSalary}
                     />
                 );
         }

@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, MessageSquare, Users, User, Archive, Trash2, CheckCircle2, Circle, MessageCircle } from 'lucide-react';
+import { X, MessageSquare, Users, User, Archive, Trash2, CheckCircle2, Circle, MessageCircle, ArrowRightLeft } from 'lucide-react';
 import { cn, getWhatsAppUrl } from '@/lib/utils';
 import { useState } from 'react';
 
@@ -14,6 +14,7 @@ interface StudentNote {
     studentName: string;
     parentPhone?: string;
     groupName: string;
+    groupId: string | null;
     teacherName: string;
     isRead: boolean;
 }
@@ -26,6 +27,7 @@ interface StudentNotesModalProps {
     onDeleteNote: (noteId: string) => void;
     onToggleRead: (noteId: string, currentStatus: boolean) => void;
     onStudentClick: (studentId: string) => void;
+    onTransferStudent: (studentId: string) => void;
 }
 
 export default function StudentNotesModal({
@@ -35,7 +37,8 @@ export default function StudentNotesModal({
     onArchiveStudent,
     onDeleteNote,
     onToggleRead,
-    onStudentClick
+    onStudentClick,
+    onTransferStudent
 }: StudentNotesModalProps) {
     const [activeTab, setActiveTab] = useState<'unread' | 'read'>('unread');
 
@@ -160,6 +163,13 @@ export default function StudentNotesModal({
                                                         title="أرشفة الطالب"
                                                     >
                                                         <Archive size={18} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => onTransferStudent(note.studentId)}
+                                                        className="w-9 h-9 flex items-center justify-center text-gray-400 hover:text-blue-600 hover:bg-white rounded-xl transition-all shadow-sm shadow-transparent hover:shadow-blue-500/10"
+                                                        title="نقل الطالب لمجموعة أخرى"
+                                                    >
+                                                        <ArrowRightLeft size={18} />
                                                     </button>
                                                     <button
                                                         onClick={() => onToggleRead(note.id, note.isRead)}

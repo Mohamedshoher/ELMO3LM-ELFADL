@@ -21,6 +21,10 @@ interface TeacherPayrollTabProps {
     deleteSalaryMutation: any;
     isSettlementMode: boolean; // إضافة هنا
     setIsSettlementMode: (val: boolean) => void; // إضافة هنا
+    isPartnership?: boolean;
+    partnershipPercentage?: number;
+    totalCollectedForGroup?: number;
+    expectedPartnershipSalary?: number;
 }
 
 export const TeacherPayrollTab = ({
@@ -41,7 +45,11 @@ export const TeacherPayrollTab = ({
     handleSendReport,
     deleteSalaryMutation,
     isSettlementMode,
-    setIsSettlementMode
+    setIsSettlementMode,
+    isPartnership,
+    partnershipPercentage,
+    totalCollectedForGroup,
+    expectedPartnershipSalary = 0
 }: TeacherPayrollTabProps) => {
 
     return (
@@ -120,6 +128,16 @@ export const TeacherPayrollTab = ({
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-6 relative z-10">
                     {/* عرض صافي المستحق والمتبقي */}
                     <div className="md:col-span-4 flex flex-col gap-3 md:gap-4 font-sans">
+                        {isPartnership && (
+                            <div className="bg-amber-500 p-4 md:p-6 rounded-[24px] md:rounded-[32px] text-center space-y-1 md:space-y-2 shadow-xl shadow-amber-500/20 relative overflow-hidden group">
+                                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
+                                    <CircleDollarSign size={60} className="md:w-20 md:h-20" />
+                                </div>
+                                <p className="text-[10px] md:text-xs font-black text-amber-50 relative z-10">الراتب المتوقع (100% تحصيل)</p>
+                                <p className="text-2xl md:text-4xl font-black text-white tracking-tight relative z-10">{expectedPartnershipSalary.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
+                                <p className="text-[8px] md:text-[10px] font-black text-amber-100/60 uppercase tracking-widest relative z-10">EXPECTED EARNINGS</p>
+                            </div>
+                        )}
                         <div className="bg-gray-50/80 p-4 md:p-6 rounded-[24px] md:rounded-[32px] border border-gray-100 text-center space-y-1 md:space-y-2 backdrop-blur-sm">
                             <p className="text-[10px] md:text-xs font-bold text-gray-400">إجمالي الاستحقاق</p>
                             <p className="text-2xl md:text-4xl font-black text-gray-900 tracking-tight">{totalEntitlement.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
@@ -136,9 +154,18 @@ export const TeacherPayrollTab = ({
 
                     {/* تفاصيل بنود الحساب (أساسي، حوافز، استقطاعات) */}
                     <div className="md:col-span-8 flex flex-col gap-3">
-                        <div className="flex flex-row-reverse items-center justify-between p-4 md:p-5 bg-gray-50/30 rounded-[20px] md:rounded-[24px] border border-gray-50 hover:bg-gray-50 transition-colors">
-                            <span className="text-xs md:text-sm font-bold text-gray-500">الراتب الأساسي/الشراكة:</span>
-                            <span className="text-sm md:text-lg font-black font-sans text-gray-900">{basicSalary.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ج.م</span>
+                        <div className="flex flex-col p-4 md:p-5 bg-gray-50/30 rounded-[20px] md:rounded-[24px] border border-gray-50 hover:bg-gray-50 transition-colors">
+                            <div className="flex flex-row-reverse items-center justify-between">
+                                <span className="text-xs md:text-sm font-bold text-gray-500">{isPartnership ? 'استحقاق الشراكة:' : 'الراتب الأساسي:'}</span>
+                                <span className="text-sm md:text-lg font-black font-sans text-gray-900">{basicSalary.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ج.م</span>
+                            </div>
+                            {isPartnership && (
+                                <div className="text-right mt-1 flex flex-col gap-1">
+                                    <p className="text-[10px] font-bold text-blue-500">
+                                        محسوب بنسبة {partnershipPercentage}% من إجمالي تحصيل المجموعة ({totalCollectedForGroup?.toLocaleString()} ج.م)
+                                    </p>
+                                </div>
+                            )}
                         </div>
                         <div className="flex flex-row-reverse items-center justify-between p-4 md:p-5 bg-green-50/30 rounded-[20px] md:rounded-[24px] border border-green-50 hover:bg-green-50 transition-colors">
                             <div className="text-right">

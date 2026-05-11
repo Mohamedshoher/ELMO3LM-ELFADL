@@ -24,7 +24,8 @@ export const useTeacherDashboard = (
     deductions: any[] = [],
     paymentsHistory: any[] = [],
     selectedMonthRaw: string,
-    isSettlementMode: boolean = false // إضافة وضع التصفية هنا
+    isSettlementMode: boolean = false, // إضافة وضع التصفية هنا
+    allTeachers: any[] = [] // إضافة قائمة المعلمين هنا
 ) => {
     return useMemo(() => {
         if (!teacher) return null;
@@ -34,6 +35,18 @@ export const useTeacherDashboard = (
         const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
 
         const teacherGroupIds = groups.filter(g => g.teacherId === teacher.id).map(g => g.id);
+
+        // وظيفة للتحقق إذا كان المنشئ معلماً آخر
+        const isOtherTeacher = (createdBy: string) => {
+            if (!createdBy || createdBy === 'غير معروف') return false;
+            const normalizedCreator = normalize(createdBy);
+            return allTeachers.some(t => 
+                t.id !== teacher.id && (
+                    normalize(t.fullName) === normalizedCreator || 
+                    t.phone === createdBy
+                )
+            );
+        };
 
         // 1. حساب المصروفات المتوقعة
         const expectedExpenses = students
@@ -55,17 +68,22 @@ export const useTeacherDashboard = (
                 const isCollectedByTeacher = f.createdBy === teacher.fullName ||
                     f.createdBy === teacher.phone ||
                     (f.createdBy && normalize(f.createdBy) === normalize(teacher.fullName));
+                
+                // يتم تضمينها إذا حصلها المعلم (حتى لو انتقل الطالب) 
+                // أو إذا كان طالب المعلم والمنشئ غير معروف (باعتبار المعلم حصله)
                 return isCollectedByTeacher || (isTeacherStudent && (!f.createdBy || f.createdBy === 'غير معروف'));
             })
             .map(f => {
                 const student = students.find(s => s.id === f.studentId);
+                const isTeacherStudent = student && student.groupId && teacherGroupIds.includes(student.groupId);
                 return {
                     id: f.receipt,
                     feeId: f.id,
                     studentName: student?.fullName || 'غير معروف',
                     amount: Number(f.amount.replace(/[^0-9.]/g, '')) || 0,
                     date: f.date,
-                    groupName: groups.find(g => g.id === student?.groupId)?.name || '-'
+                    groupName: groups.find(g => g.id === student?.groupId)?.name || '-',
+                    isTransferred: student && !isTeacherStudent // وسم "منقول" إذا لم يعد في مجموعات هذا المعلم
                 };
             });
         const totalCollected = collectedPayments.reduce((sum, p) => sum + p.amount, 0);
@@ -73,9 +91,13 @@ export const useTeacherDashboard = (
         // 3. حساب ما حصله المدير
         const managerCollectedPayments = allFees
             .filter(f => {
-                const isTeacherStudent = students.find(s => s.id === f.studentId && s.groupId && teacherGroupIds.includes(s.groupId));
-                const isCollectedByTeacher = f.createdBy === teacher.fullName || (f.createdBy && normalize(f.createdBy) === normalize(teacher.fullName));
-                return isTeacherStudent && !isCollectedByTeacher && f.createdBy && f.createdBy !== 'غير معروف';
+                const student = students.find(s => s.id === f.studentId);
+                const isTeacherStudent = student && student.groupId && teacherGroupIds.includes(student.groupId);
+                const isCollectedByThisTeacher = f.createdBy === teacher.fullName || (f.createdBy && normalize(f.createdBy) === normalize(teacher.fullName));
+                
+                // يظهر في "تحصيل المدير" فقط إذا كان الطالب حالياً في مجموعات المعلم
+                // والتحصيل لم يتم بواسطة هذا المعلم، وأيضاً لم يتم بواسطة أي معلم آخر (أي بواسطة المدير/المشرف)
+                return isTeacherStudent && !isCollectedByThisTeacher && !isOtherTeacher(f.createdBy) && f.createdBy && f.createdBy !== 'غير معروف';
             })
             .map(f => {
                 const student = students.find(s => s.id === f.studentId);
@@ -91,14 +113,27 @@ export const useTeacherDashboard = (
         const totalCollectedByManager = managerCollectedPayments.reduce((sum, p) => sum + p.amount, 0);
 
         // 4. الراتب
-        let basicSalary = teacher.salary || 1000;
+        let basicSalary = 0;
+        const isPartnership = teacher.accountingType === 'partnership';
+        
+        // حساب إجمالي محصل المجموعة (كل الطلاب التابعين لمجموعات المدرس)
+        const totalCollectedForGroup = allFees.filter(f => {
+            const student = students.find(s => s.id === f.studentId);
+            return student && student.groupId && teacherGroupIds.includes(student.groupId);
+        }).reduce((sum, f) => sum + (Number(f.amount.replace(/[^0-9.]/g, '')) || 0), 0);
 
-        // إذا كان المدرس سيصفي حسابه في وسط الشهر، نحسب له الراتب الأساسي نسبة لليوم
-        if (isSettlementMode) {
-            basicSalary = Math.round((basicSalary / daysInMonth) * currentDay);
+        if (isPartnership) {
+            const percentage = Number(teacher.partnershipPercentage) || 0;
+            basicSalary = (totalCollectedForGroup * percentage) / 100;
+        } else {
+            basicSalary = Number(teacher.salary) || 0;
+            // إذا كان المدرس سيصفي حسابه في وسط الشهر، نحسب له الراتب الأساسي نسبة لليوم
+            if (isSettlementMode) {
+                basicSalary = Math.round((basicSalary / daysInMonth) * currentDay);
+            }
         }
 
-        const dailyRate = (teacher.salary || 1000) / 22; // معدل اليوم يظل ثابتاً للحسابات الدقيقة
+        const dailyRate = isPartnership ? (basicSalary / 22) : (Number(teacher.salary) || 1000) / 22;
 
         // خصومات تلقائية (حسب الحضور)
         const autoDeductions = Object.values(attendanceData || {}).reduce((acc: number, status: any) => {
@@ -203,8 +238,12 @@ export const useTeacherDashboard = (
                 totalPaid,
                 totalEntitlement,
                 remainingToPay,
-                dailyRate
+                dailyRate,
+                isPartnership,
+                partnershipPercentage: teacher.partnershipPercentage,
+                totalCollectedForGroup,
+                expectedPartnershipSalary: isPartnership ? (expectedExpenses * (Number(teacher.partnershipPercentage) || 0)) / 100 : 0
             }
         };
-    }, [teacher, students, groups, allFees, selectedMonthRaw, attendanceData, handovers, exemptions, deductions, paymentsHistory]);
+    }, [teacher, students, groups, allFees, selectedMonthRaw, attendanceData, handovers, exemptions, deductions, paymentsHistory, allTeachers]);
 };

@@ -31,6 +31,7 @@ import { useStudents } from '@/features/students/hooks/useStudents';
 import dynamic from 'next/dynamic';
 const StudentNotesModal = dynamic(() => import('@/features/finance/components/StudentNotesModal'), { ssr: false });
 const StudentDetailModal = dynamic(() => import('@/features/students/components/StudentDetailModal'), { ssr: false });
+const EditStudentModal = dynamic(() => import('@/features/students/components/EditStudentModal'), { ssr: false });
 import { supabase } from '@/lib/supabase';
 import { Student, Group, FinancialTransaction } from '@/types';
 import { useRouter } from 'next/navigation';
@@ -46,6 +47,7 @@ export default function DashboardOverview() {
     const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false);
     const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
     const [selectedStudentForDetail, setSelectedStudentForDetail] = useState<Student | null>(null);
+    const [selectedStudentForEdit, setSelectedStudentForEdit] = useState<Student | null>(null);
     const queryClient = useQueryClient();
     const { archiveStudent } = useStudents();
 
@@ -399,6 +401,10 @@ export default function DashboardOverview() {
                     const student = students.find((s: Student) => s.id === studentId);
                     if (student) setSelectedStudentForDetail(student);
                 }}
+                onTransferStudent={(studentId) => {
+                    const student = students.find((s: Student) => s.id === studentId);
+                    if (student) setSelectedStudentForEdit(student);
+                }}
             />
 
             {/* نافذة تفاصيل الطالب */}
@@ -407,6 +413,13 @@ export default function DashboardOverview() {
                 isOpen={!!selectedStudentForDetail}
                 onClose={() => setSelectedStudentForDetail(null)}
                 initialTab="notes"
+            />
+
+            {/* نافذة تعديل بيانات الطالب (للنقل لمجموعة أخرى) */}
+            <EditStudentModal
+                isOpen={!!selectedStudentForEdit}
+                onClose={() => setSelectedStudentForEdit(null)}
+                student={selectedStudentForEdit}
             />
         </div>
     );

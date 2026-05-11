@@ -54,12 +54,14 @@ export default function ManageGroupsModal({ isOpen, onClose }: ManageGroupsModal
 
         return filtered.map(group => {
             const teacher = teachers?.find(t => t.id === group.teacherId);
-            const studentCount = students?.filter(s => s.groupId === group.id && s.status === 'active').length || 0;
+            const activeCount = students?.filter(s => s.groupId === group.id && s.status === 'active').length || 0;
+            const totalCount = students?.filter(s => s.groupId === group.id).length || 0;
 
             return {
                 ...group,
                 teacher: teacher?.fullName || 'غير محدد',
-                count: studentCount,
+                count: activeCount,
+                totalCount: totalCount,
                 color: getGroupColor(group.name)
             };
         });
@@ -74,10 +76,14 @@ export default function ManageGroupsModal({ isOpen, onClose }: ManageGroupsModal
     });
 
     // 5. دوال معالجة الأحداث (Event Handlers)
-    // معالجة حدث الحذف مع التحقق من وجود طلاب
-    const handleDelete = (id: string, count: number) => {
-        if (count > 0) {
-            alert('لا يمكن حذف مجموعة تحتوي على طلاب. يرجى نقل الطلاب أولاً.');
+    // معالجة حدث الحذف مع التحقق من وجود طلاب (نشطين أو مؤرشفين)
+    const handleDelete = (id: string, activeCount: number, totalCount: number) => {
+        if (totalCount > 0) {
+            if (activeCount > 0) {
+                alert('لا يمكن حذف مجموعة تحتوي على طلاب نشطين. يرجى نقل الطلاب أولاً.');
+            } else {
+                alert('لا يمكن حذف المجموعة لأنها تحتوي على طلاب مؤرشفين. يرجى نقلهم أو إخراجهم من المجموعة أولاً من خلال سجل الطلاب المؤرشفين.');
+            }
             return;
         }
         if (confirm('هل أنت متأكد من حذف هذه المجموعة؟')) {
@@ -102,7 +108,7 @@ export default function ManageGroupsModal({ isOpen, onClose }: ManageGroupsModal
                                         </span>
                                         <div className="flex items-center gap-1 bg-gray-50 rounded-lg p-0.5 border border-gray-100">
                                             <button
-                                                onClick={() => handleDelete(group.id, group.count)}
+                                                onClick={() => handleDelete(group.id, group.count, group.totalCount)}
                                                 className="p-1.5 text-gray-400 hover:text-red-500 transition-colors"
                                                 title="حذف"
                                             >

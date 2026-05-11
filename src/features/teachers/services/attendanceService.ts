@@ -59,6 +59,7 @@ export const getTeacherAttendance = async (teacherId: string, monthKey: string):
  */
 export const getAllTeachersAttendance = async (monthKey: string): Promise<Record<string, Record<string, TeacherAttendanceStatus>>> => {
     try {
+        if (!monthKey || !monthKey.includes('-')) return {};
         const [year, month] = monthKey.split('-');
         const lastDay = new Date(parseInt(year), parseInt(month), 0).getDate();
 

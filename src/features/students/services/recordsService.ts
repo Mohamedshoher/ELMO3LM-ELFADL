@@ -748,6 +748,7 @@ export const getAllStudentNotesWithDetails = async (limit: number = 20) => {
             studentName: n.students?.full_name || 'غير معروف',
             parentPhone: n.students?.parent_phone || '',
             groupName: n.students?.groups?.name || 'بدون مجموعة',
+            groupId: n.students?.groups?.id || null,
             teacherName: n.students?.groups?.teachers?.full_name || 'غير معروف',
             isRead: n.is_read || false
         }));

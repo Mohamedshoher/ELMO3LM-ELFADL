@@ -13,7 +13,9 @@ import {
     ChevronRight,
     Calendar,
     AlertCircle,
-    X
+    X,
+    ShieldCheck,
+    Loader
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -28,9 +30,10 @@ import type { FinancialTransaction, Teacher } from '@/types';
 import { useTeachers } from '@/features/teachers/hooks/useTeachers';
 import { useStudents } from '@/features/students/hooks/useStudents';
 import { useGroups } from '@/features/groups/hooks/useGroups';
-import { useTeacherAttendance } from '@/features/teachers/hooks/useTeacherAttendance';
+import { useTeacherAttendance, useAllTeachersAttendance } from '@/features/teachers/hooks/useTeacherAttendance';
 import TeacherCollectionsModal from '@/features/finance/components/TeacherCollectionsModal';
 import TeacherDetailModal from '@/features/teachers/components/TeacherDetailModal';
+import { teacherDeductionService } from '@/features/teachers/services/deductionService';
 
 
 interface Transaction extends TransactionData {
@@ -61,6 +64,7 @@ export default function FinancePage() {
     const [isManagerCollectionsOpen, setIsManagerCollectionsOpen] = useState(false);
     const [isManagerDirectOpen, setIsManagerDirectOpen] = useState(false);
     const [isOtherIncomeOpen, setIsOtherIncomeOpen] = useState(false);
+    const [isDeductionsModalOpen, setIsDeductionsModalOpen] = useState(false);
 
     // Get Exemptions
     const { data: exemptions = [] } = useQuery({
@@ -129,6 +133,37 @@ export default function FinancePage() {
         enabled: isClient && !!selectedMonth
     });
 
+    const { data: monthDeductions = [] } = useQuery({
+        queryKey: ['all-deductions-finance', selectedMonth],
+        queryFn: async () => {
+            if (!isClient) return [];
+            return await teacherDeductionService.getAllDeductions();
+        },
+        enabled: isClient && !!selectedMonth
+    });
+
+    const { data: allAttendanceMap = {} } = useAllTeachersAttendance(selectedMonth);
+
+    const waiveDeductionMutation = useMutation({
+        mutationFn: async ({ teacherId, teacherName, amount, month }: any) => {
+            const [year, monthNum] = selectedMonth.split('-');
+            const customDate = `${year}-${monthNum}-01`;
+            
+            return await teacherDeductionService.applyDeduction(
+                teacherId,
+                teacherName,
+                -amount,
+                `عفو عن خصومات شهر ${month}`,
+                user?.displayName || 'المدير',
+                customDate
+            );
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['all-deductions-finance'] });
+            // Invalidate teacher dashboard data if possible, though mostly finance page is what matters here
+        }
+    });
+
     // Process transactions
     const transactions: Transaction[] = useMemo(() => {
         return dbTransactions.map(tr => ({
@@ -163,7 +198,11 @@ export default function FinancePage() {
         totalGlobalExempted,
         totalGlobalExpectedExpenses,
         managerDirectFeesList,
-        otherIncomeList
+        otherIncomeList,
+        totalGlobalDeductions,
+        totalGlobalWaived,
+        totalGlobalOriginalDeductions,
+        deductionsBreakdown
     } = useMemo(() => {
         const incomeTransactions = filteredTransactions.filter(tr => tr.type === 'income');
         const expenseTransactions = filteredTransactions.filter(tr => tr.type === 'expense');
@@ -301,6 +340,68 @@ export default function FinancePage() {
 
         const otherIncomeList = incomeTransactions.filter(tr => tr.category === 'donation' || tr.category === 'other');
 
+        // حساب الخصومات المالية للمدرسين
+        const filteredDeductions = monthDeductions.filter(d => {
+            const dDate = new Date(d.appliedDate);
+            const dMonthRaw = `${dDate.getFullYear()}-${String(dDate.getMonth() + 1).padStart(2, '0')}`;
+            return dMonthRaw === selectedMonth && d.status === 'applied' && !d.reason.startsWith('مكافأة:');
+        });
+
+        const deductionsBreakdown = teachers.map(t => {
+            const teacherDeductions = filteredDeductions.filter(d => d.teacherId === t.id);
+            const manualDays = teacherDeductions.reduce((sum, d) => sum + d.amount, 0);
+            
+            // حساب خصومات الغياب من جدول الحضور
+            const teacherAttendance = allAttendanceMap[t.id] || {};
+            const absenceDays = Object.values(teacherAttendance).reduce((acc: number, status: any) => {
+                if (status === 'absent') return acc + 1;
+                if (status === 'half') return acc + 0.5;
+                if (status === 'quarter') return acc + 0.25;
+                return acc;
+            }, 0);
+
+            const totalDays = manualDays + absenceDays;
+            
+            // حساب الراتب الأساسي أو الشراكة لتحديد معدل الخصم اليومي
+            let dailyRate = 0;
+            if (t.accountingType === 'partnership') {
+                const teacherGroupIds = groups.filter(g => g.teacherId === t.id).map(g => g.id);
+                const totalCollectedForGroup = allFees.filter(f => {
+                    const student = students.find(s => s.id === f.studentId);
+                    return student && student.groupId && teacherGroupIds.includes(student.groupId);
+                }).reduce((sum, f) => sum + (Number(f.amount.replace(/[^0-9.]/g, '')) || 0), 0);
+                const partnershipSalary = (totalCollectedForGroup * (Number(t.partnershipPercentage) || 0)) / 100;
+                dailyRate = partnershipSalary / 22;
+            } else {
+                dailyRate = (Number(t.salary) || 1000) / 22;
+            }
+
+            const totalAmount = Math.max(0, Math.round(totalDays * dailyRate));
+            
+            const originalDays = absenceDays + (manualDays > 0 ? manualDays : 0);
+            const originalAmount = Math.round(originalDays * dailyRate);
+            const waivedAmount = Math.max(0, originalAmount - totalAmount);
+            
+            const isWaived = totalDays <= 0.05 && originalDays > 0.05;
+            
+            return {
+                teacherId: t.id,
+                teacherName: t.fullName,
+                manualDays,
+                absenceDays,
+                totalDays,
+                totalAmount,
+                originalAmount,
+                waivedAmount,
+                isWaived,
+                dailyRate
+            };
+        }).filter(item => item.originalAmount > 0 || item.totalAmount > 0 || item.isWaived).sort((a, b) => b.totalAmount - a.totalAmount);
+
+        const totalGlobalDeductions = deductionsBreakdown.reduce((sum, d) => sum + d.totalAmount, 0);
+        const totalGlobalWaived = deductionsBreakdown.reduce((sum, d) => sum + d.waivedAmount, 0);
+        const totalGlobalOriginalDeductions = deductionsBreakdown.reduce((sum, d) => sum + d.originalAmount, 0);
+
         return {
             teacherFees: totalFeesByTeachers,
             feesByManager: totalFeesByManagerDirect,
@@ -315,9 +416,13 @@ export default function FinancePage() {
             totalGlobalExempted: exemptions.reduce((sum, e: any) => sum + (Number(e.amount) || 0), 0),
             totalGlobalExpectedExpenses,
             managerDirectFeesList,
-            otherIncomeList
+            otherIncomeList,
+            totalGlobalDeductions,
+            totalGlobalWaived,
+            totalGlobalOriginalDeductions,
+            deductionsBreakdown
         };
-    }, [filteredTransactions, teachers, students, groups, allFees, user?.displayName, exemptions, selectedMonth]);
+    }, [filteredTransactions, teachers, students, groups, allFees, user?.displayName, exemptions, selectedMonth, monthDeductions, allAttendanceMap]);
 
     const expenseBreakdown = useMemo(() => {
         const breakdown: Record<string, number> = {};
@@ -802,6 +907,152 @@ export default function FinancePage() {
                 )}
             </AnimatePresence>
 
+            {/* Deductions Breakdown Modal */}
+            <AnimatePresence>
+                {isDeductionsModalOpen && (
+                    <>
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-md"
+                            onClick={() => setIsDeductionsModalOpen(false)}
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9, y: 30 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.9, y: 30 }}
+                            className="fixed top-[10%] left-1/2 -translate-x-1/2 w-[95%] max-w-2xl bg-white rounded-[40px] shadow-2xl z-[101] overflow-hidden flex flex-col max-h-[80vh] border border-white/20"
+                        >
+                            <div className="p-6 border-b border-gray-50 flex items-center justify-between bg-white shrink-0">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center text-red-600">
+                                        <AlertCircle size={24} />
+                                    </div>
+                                    <div className="text-right">
+                                        <h3 className="text-xl font-black text-gray-900">إجمالي الخصومات</h3>
+                                        <p className="text-xs font-bold text-gray-400 mt-0.5">تفاصيل المبالغ المخصومة من المدرسين (أوتوماتيك ويدوي)</p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => setIsDeductionsModalOpen(false)}
+                                    className="w-10 h-10 rounded-full bg-gray-50 text-gray-400 hover:bg-gray-100 flex items-center justify-center transition-colors"
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            <div className="p-6 overflow-y-auto no-scrollbar space-y-4">
+                                {deductionsBreakdown.length === 0 ? (
+                                    <div className="py-20 text-center text-gray-400 text-sm font-bold bg-gray-50/50 rounded-[32px] border-2 border-dashed border-gray-100">
+                                        لا توجد خصومات مسجلة هذا الشهر.
+                                    </div>
+                                ) : (
+                                    deductionsBreakdown.map((d: any) => (
+                                        <div key={d.teacherId} className={cn(
+                                            "rounded-2xl p-4 border transition-all group flex items-center justify-between shadow-sm",
+                                            d.isWaived 
+                                                ? "bg-green-50/50 border-green-100 hover:border-green-300" 
+                                                : "bg-white border-gray-100 hover:border-red-200"
+                                        )}>
+                                            <div className="flex items-center gap-4">
+                                                <div className={cn(
+                                                    "w-10 h-10 rounded-xl flex items-center justify-center font-black text-[10px]",
+                                                    d.isWaived ? "bg-green-100 text-green-700" : "bg-red-50 text-red-600"
+                                                )}>
+                                                    {Number(d.totalDays.toFixed(2))} ي
+                                                </div>
+                                                <div className="text-right">
+                                                    <h4 className={cn(
+                                                        "font-black transition-colors flex items-center gap-2",
+                                                        d.isWaived ? "text-green-800" : "text-gray-900 group-hover:text-red-600"
+                                                    )}>
+                                                        {d.teacherName}
+                                                        {d.waivedAmount > 0 && !d.isWaived && (
+                                                            <span className="text-[8px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-md">عفو جزئي: {d.waivedAmount.toLocaleString()} ج.م</span>
+                                                        )}
+                                                    </h4>
+                                                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1">
+                                                        <p className="text-[9px] text-gray-400 font-bold bg-gray-50/80 px-2 py-0.5 rounded-full border border-gray-100">غياب: {Number(d.absenceDays.toFixed(2))}ي</p>
+                                                        <p className="text-[9px] text-gray-400 font-bold bg-gray-50/80 px-2 py-0.5 rounded-full border border-gray-100">يدوي: {Number(d.manualDays.toFixed(2))}ي</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-4">
+                                                <div className="text-left flex flex-col items-end">
+                                                    <p className={cn(
+                                                        "text-lg font-black font-sans leading-none",
+                                                        d.isWaived ? "text-green-600" : "text-red-600"
+                                                    )}>
+                                                        {d.totalAmount.toLocaleString()} <span className="text-[10px]">ج.م</span>
+                                                    </p>
+                                                    {d.waivedAmount > 0 && (
+                                                        <div className="flex items-center gap-1 mt-1">
+                                                            <span className="text-[9px] font-bold text-green-500">عفو: {d.waivedAmount.toLocaleString()}</span>
+                                                            <span className="text-[9px] font-bold text-gray-300 line-through decoration-red-400/30">
+                                                                {d.originalAmount.toLocaleString()}
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                {d.totalAmount > 0 && (
+                                                    <button
+                                                        onClick={() => {
+                                                            const amountStr = prompt(`أدخل المبلغ المراد العفو عنه لـ ${d.teacherName} (ج.م):`, d.totalAmount.toString());
+                                                            if (amountStr) {
+                                                                const moneyToWaive = parseFloat(amountStr);
+                                                                if (!isNaN(moneyToWaive) && moneyToWaive > 0) {
+                                                                    // تحويل المبلغ المالي إلى أيام بناءً على معدل اليومية
+                                                                    const daysToWaive = moneyToWaive / d.dailyRate;
+                                                                    waiveDeductionMutation.mutate({
+                                                                        teacherId: d.teacherId,
+                                                                        teacherName: d.teacherName,
+                                                                        amount: daysToWaive,
+                                                                        month: months.find(m => m.value === selectedMonth)?.label || selectedMonth
+                                                                    });
+                                                                }
+                                                            }
+                                                        }}
+                                                        disabled={waiveDeductionMutation.isPending}
+                                                        className="w-10 h-10 bg-green-50 text-green-600 rounded-xl flex items-center justify-center hover:bg-green-600 hover:text-white transition-all shadow-sm"
+                                                        title="عفو عن مبلغ من الخصم"
+                                                    >
+                                                        {waiveDeductionMutation.isPending ? <Loader size={16} className="animate-spin" /> : <ShieldCheck size={20} />}
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+
+                            <div className="p-6 bg-gray-50/50 border-t border-gray-100 shrink-0 space-y-3">
+                                <div className="flex flex-col gap-2">
+                                    <div className="flex items-center justify-between opacity-60">
+                                        <div className="text-sm font-bold text-gray-500 font-sans">
+                                            {totalGlobalOriginalDeductions.toLocaleString()} ج.م
+                                        </div>
+                                        <p className="text-[10px] font-black text-gray-400">إجمالي الخصومات قبل العفو</p>
+                                    </div>
+                                    <div className="flex items-center justify-between text-green-600">
+                                        <div className="text-sm font-bold font-sans">
+                                            -{totalGlobalWaived.toLocaleString()} ج.م
+                                        </div>
+                                        <p className="text-[10px] font-black">إجمالي ما تم العفو عنه</p>
+                                    </div>
+                                </div>
+                                <div className="pt-3 border-t border-gray-200 flex items-center justify-between">
+                                    <div className="text-2xl font-black text-red-600 font-sans">
+                                        {totalGlobalDeductions.toLocaleString()} <span className="text-sm">ج.م</span>
+                                    </div>
+                                    <p className="text-xs font-black text-gray-400">صافي قيمة الخصومات</p>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </>
+                )}
+            </AnimatePresence>
+
             {/* Total Expenses Details Modal */}
             <AnimatePresence>
                 {isExpenseDetailsOpen && (
@@ -1108,6 +1359,22 @@ export default function FinancePage() {
                                     <p className="text-[11px] font-black text-gray-400 mb-1">إجمالي المعفي عنه</p>
                                     <h3 className="text-2xl font-black text-teal-600 font-sans tracking-tight">
                                         {totalGlobalExempted.toLocaleString()} <span className="text-xs">ج.م</span>
+                                    </h3>
+                                </div>
+                            </div>
+
+                            {/* Card: Total Deductions */}
+                            <div
+                                onClick={() => setIsDeductionsModalOpen(true)}
+                                className="bg-white/90 backdrop-blur-xl border border-red-100/50 rounded-[32px] p-6 flex flex-col justify-between min-h-[160px] shadow-sm hover:shadow-2xl hover:shadow-red-500/10 hover:-translate-y-1 transition-all group cursor-pointer"
+                            >
+                                <div className="w-12 h-12 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center shadow-sm border border-red-100/30">
+                                    <AlertCircle size={24} />
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-[11px] font-black text-gray-400 mb-1">إجمالي الخصومات</p>
+                                    <h3 className="text-2xl font-black text-red-600 font-sans tracking-tight">
+                                        {totalGlobalDeductions.toLocaleString()} <span className="text-xs">ج.م</span>
                                     </h3>
                                 </div>
                             </div>

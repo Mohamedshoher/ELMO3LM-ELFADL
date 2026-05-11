@@ -85,6 +85,9 @@ export const TeacherCollectedPaymentsModal = ({
                                                             <h4 className="font-bold text-gray-900">{payment.studentName}</h4>
                                                             <div className="flex gap-2 mt-1">
                                                                 <span className={cn("text-[10px] px-2 py-0.5 rounded-md font-bold", colorClasses.bg, colorClasses.text)}>{payment.groupName}</span>
+                                                                {payment.isTransferred && (
+                                                                    <span className="text-[10px] px-2 py-0.5 rounded-md font-bold bg-amber-50 text-amber-600">تم نقله</span>
+                                                                )}
                                                                 <span className="text-[10px] text-gray-400 font-sans">{payment.date}</span>
                                                             </div>
                                                         </div>
