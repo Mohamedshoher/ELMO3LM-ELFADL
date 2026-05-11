@@ -142,7 +142,8 @@ export default function FinancePage() {
         enabled: isClient && !!selectedMonth
     });
 
-    const { data: allAttendanceMap = {} as Record<string, any> } = useAllTeachersAttendance(selectedMonth);
+    const allAttendanceResult = useAllTeachersAttendance(selectedMonth);
+    const allAttendanceMap = (allAttendanceResult.data || {}) as Record<string, any>;
 
     const waiveDeductionMutation = useMutation({
         mutationFn: async ({ teacherId, teacherName, amount, month }: any) => {
