@@ -55,7 +55,8 @@ export default function TeacherList() {
     // حالة الحضور
     const today = new Date();
     const [selectedMonthRaw, setSelectedMonthRaw] = useState(`${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`);
-    const { data: allTeachersAttendanceMap = {} } = useAllTeachersAttendance(selectedMonthRaw);
+    const allTeachersAttendanceResult = useAllTeachersAttendance(selectedMonthRaw);
+    const allTeachersAttendanceMap = (allTeachersAttendanceResult.data || {}) as Record<string, any>;
 
     const { updateAttendance, updateAttendanceAsync } = useTeacherAttendance(selectedTeacher?.id, selectedMonthRaw);
 
