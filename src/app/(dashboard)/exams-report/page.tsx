@@ -207,7 +207,7 @@ export default function ExamsReportPage() {
         }
 
                 return baseGroups.map((g: any) => {
-                    const groupStudents = (students || []).filter((s: any) => s.groupId === g.id);
+                    const groupStudents = (students || []).filter((s: any) => s.groupId === g.id && s.status === 'active');
                     const groupStudentIds = new Set(groupStudents.map((s: any) => s.id));
 
                     const groupExams = allExams.filter((e: any) => groupStudentIds.has(e.studentId));
