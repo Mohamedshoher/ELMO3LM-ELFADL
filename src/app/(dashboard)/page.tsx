@@ -98,7 +98,7 @@ export default function DashboardOverview() {
     const { data: todayAttendance = [] } = useQuery({
         queryKey: ['attendance', todayStr],
         queryFn: async () => {
-            const { data } = await supabase.from('attendance').select('*').eq('date', todayStr).eq('status', 'present');
+            const { data } = await supabase.from('attendance').select('id, student_id, date, status').eq('date', todayStr).eq('status', 'present');
             return data || [];
         }
     });

@@ -69,7 +69,7 @@ export default function ArchiveList() {
                 let from = 0;
                 const step = 1000;
                 while (true) {
-                    const { data, error } = await supabase.from('fees').select('*').in('student_id', chunk).range(from, from + step - 1);
+                    const { data, error } = await supabase.from('fees').select('id, student_id, month, amount, date, created_by').in('student_id', chunk).range(from, from + step - 1);
                     if (error || !data || data.length === 0) break;
                     allData = [...allData, ...data];
                     if (data.length < step) break;
@@ -125,7 +125,7 @@ export default function ArchiveList() {
             const { supabase } = await import('@/lib/supabase');
             const { data, error } = await supabase
                 .from('free_exemptions')
-                .select('*')
+                .select('id, student_id, student_name, month, amount, exempted_by, created_at')
                 .in('student_id', archivedIds);
             
             return data || [];

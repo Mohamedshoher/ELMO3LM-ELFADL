@@ -82,7 +82,7 @@ export const addLog = async (log: Omit<AutomationLog, 'id'>): Promise<Automation
 export const getLogs = async (logLimit: number = 1500, selectedDateStr?: string): Promise<AutomationLog[]> => {
     try {
         const { data, error } = await supabase.from('automation_logs')
-            .select('*')
+            .select('id, rule_id, rule_name, affected_entity_id, affected_entity_name, details, triggered_at, status')
             .order('triggered_at', { ascending: false })
             .limit(logLimit);
 
@@ -132,7 +132,7 @@ export const getLogs = async (logLimit: number = 1500, selectedDateStr?: string)
 };
 
 export const getRules = async (): Promise<AutomationRule[]> => {
-    const { data, error } = await supabase.from('automation_rules').select('*');
+    const { data, error } = await supabase.from('automation_rules').select('id, name, type, recipients, schedule, conditions, actions, is_active, created_at');
     if (error) return [];
     return data.map(row => ({
         id: row.id, name: row.name, trigger: row.type as any, recipients: row.recipients || [],

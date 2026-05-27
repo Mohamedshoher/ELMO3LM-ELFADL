@@ -28,23 +28,23 @@ export const getTeacherAttendance = async (teacherId: string, monthKey: string):
         // جلب البيانات من جدول الحضور ضمن النطاق الزمني المحدد للشهر
         const { data, error } = await supabase
             .from('teacher_attendance')
-            .select('*')
+            .select('teacher_id, date, status')
             .eq('teacher_id', teacherId)
             .gte('date', `${monthKey}-01`)
             .lte('date', `${monthKey}-${lastDay}`);
-
-        if (error) {
-            console.error("Supabase error fetching teacher attendance:", error.message || error);
-            return {};
-        }
-
-        // تحويل البيانات إلى خريطة (Map) لتسهيل الوصول إليها برقم اليوم
-        const attendanceMap: Record<string, TeacherAttendanceStatus> = {};
-        data?.forEach(row => {
-            // استخدام تقسيم السلسلة لتجنب مشاكل المناطق الزمنية الخاصة بـ Date
-            const dateParts = row.date.split('-');
-            const day = parseInt(dateParts[2], 10);
-            attendanceMap[day] = row.status as TeacherAttendanceStatus;
+    
+            if (error) {
+                console.error("Supabase error fetching teacher attendance:", error.message || error);
+                return {};
+            }
+    
+            // تحويل البيانات إلى خريطة (Map) لتسهيل الوصول إليها برقم اليوم
+            const attendanceMap: Record<string, TeacherAttendanceStatus> = {};
+            data?.forEach(row => {
+                // استخدام تقسيم السلسلة لتجنب مشاكل المناطق الزمنية الخاصة بـ Date
+                const dateParts = row.date.split('-');
+                const day = parseInt(dateParts[2], 10);
+                attendanceMap[day] = row.status as TeacherAttendanceStatus;
         });
 
         return attendanceMap;
@@ -65,23 +65,23 @@ export const getAllTeachersAttendance = async (monthKey: string): Promise<Record
 
         const { data, error } = await supabase
             .from('teacher_attendance')
-            .select('*')
+            .select('teacher_id, date, status')
             .gte('date', `${monthKey}-01`)
             .lte('date', `${monthKey}-${lastDay}`);
-
-        if (error) {
-            console.error("Supabase error fetching all teachers attendance:", error.message || error);
-            return {};
-        }
-
-        // هيكلة البيانات لتكون: { [teacherId]: { [day]: status } }
-        const fullMap: Record<string, Record<string, TeacherAttendanceStatus>> = {};
-        data?.forEach(row => {
-            if (!fullMap[row.teacher_id]) fullMap[row.teacher_id] = {};
-            
-            const dateParts = row.date.split('-');
-            const day = parseInt(dateParts[2], 10);
-            fullMap[row.teacher_id][day] = row.status as TeacherAttendanceStatus;
+    
+            if (error) {
+                console.error("Supabase error fetching all teachers attendance:", error.message || error);
+                return {};
+            }
+    
+            // هيكلة البيانات لتكون: { [teacherId]: { [day]: status } }
+            const fullMap: Record<string, Record<string, TeacherAttendanceStatus>> = {};
+            data?.forEach(row => {
+                if (!fullMap[row.teacher_id]) fullMap[row.teacher_id] = {};
+                
+                const dateParts = row.date.split('-');
+                const day = parseInt(dateParts[2], 10);
+                fullMap[row.teacher_id][day] = row.status as TeacherAttendanceStatus;
         });
 
         return fullMap;

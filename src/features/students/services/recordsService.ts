@@ -75,28 +75,28 @@ export const getStudentAttendance = async (studentId: string): Promise<Attendanc
     try {
         const { data, error } = await supabase
             .from('attendance')
-            .select('*')
+            .select('id, student_id, date, month_key, status, created_at')
             .eq('student_id', studentId)
             // .order('date', { ascending: false }); // Optional ordering
             .order('created_at', { ascending: false });
-
-        if (error) {
-            console.error("Supabase error fetching attendance:", error);
-            return [];
-        }
-
-        return (data || []).map(row => {
-            const dateObj = new Date(row.date); // row.date is YYYY-MM-DD
-            return {
-                id: row.id,
-                studentId: row.student_id,
-                day: dateObj.getDate(),
-                month: row.month_key || `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}`,
-                status: row.status as 'present' | 'absent',
-                recordedBy: '', // Not in schema example
-                timestamp: new Date(row.created_at).getTime()
-            };
-        });
+    
+            if (error) {
+                console.error("Supabase error fetching attendance:", error);
+                return [];
+            }
+    
+            return (data || []).map(row => {
+                const dateObj = new Date(row.date); // row.date is YYYY-MM-DD
+                return {
+                    id: row.id,
+                    studentId: row.student_id,
+                    day: dateObj.getDate(),
+                    month: row.month_key || `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}`,
+                    status: row.status as 'present' | 'absent',
+                    recordedBy: '', // Not in schema example
+                    timestamp: new Date(row.created_at).getTime()
+                };
+            });
     } catch (error) {
         console.error("Error fetching student attendance:", error);
         return [];
@@ -114,7 +114,7 @@ export const getAllAttendanceForMonth = async (monthKey: string): Promise<Record
         // لضمان إرجاع جميع السجلات سواء كان month_key مضبوطاً أم لا
         const { data, error } = await supabase
             .from('attendance')
-            .select('*')
+            .select('id, student_id, date, status, created_at')
             .or(`month_key.eq.${monthKey},and(date.gte.${startDate},date.lte.${endDate})`)
             .order('created_at', { ascending: true })
             .limit(30000);
@@ -185,7 +185,7 @@ export const addAttendanceRecord = async (record: Omit<AttendanceRecord, 'id'>):
                 month_key: record.month,
                 status: record.status
             }])
-            .select('*')
+            .select('id')
             .single();
 
         if (error) throw error;
@@ -217,7 +217,7 @@ export const getStudentExams = async (studentId: string): Promise<ExamRecord[]> 
     try {
         const { data, error } = await supabase
             .from('exams')
-            .select('*')
+            .select('id, student_id, surah, exam_type, grade, date, created_at')
             .eq('student_id', studentId);
 
         if (error) return [];
@@ -240,7 +240,7 @@ export const getStudentExams = async (studentId: string): Promise<ExamRecord[]> 
 
 export const getAllExams = async (monthKey?: string, periodHalf?: 1 | 2, studentIds?: string[]): Promise<ExamRecord[]> => {
     try {
-        let query = supabase.from('exams').select('*');
+        let query = supabase.from('exams').select('id, student_id, surah, exam_type, grade, date, created_at');
 
         if (monthKey) {
             // نفترض أن monthKey بصيغة YYYY-MM
@@ -319,7 +319,7 @@ export const getStudentFees = async (studentId: string): Promise<FeeRecord[]> =>
     try {
         const { data, error } = await supabase
             .from('fees')
-            .select('*')
+            .select('id, student_id, month, amount, receipt_number, date, created_by, created_at')
             .eq('student_id', studentId);
 
         if (error) return [];
@@ -344,7 +344,7 @@ export const getFeesByMonth = async (monthKey: string): Promise<FeeRecord[]> => 
     try {
         const { data, error } = await supabase
             .from('fees')
-            .select('*')
+            .select('id, student_id, month, amount, receipt_number, date, created_by, created_at')
             .eq('month', monthKey);
 
         if (error) return [];
@@ -403,7 +403,7 @@ export const getStudentExemptions = async (studentId: string): Promise<Exemption
     try {
         const { data, error } = await supabase
             .from('free_exemptions')
-            .select('*')
+            .select('id, student_id, student_name, teacher_id, month, amount, exempted_by, created_at')
             .eq('student_id', studentId);
 
         if (error) {
@@ -442,7 +442,7 @@ export const getStudentPlans = async (studentId: string): Promise<PlanRecord[]> 
     try {
         const { data, error } = await supabase
             .from('plans')
-            .select('*')
+            .select('id, student_id, date, new_hifz, prev_review, distant_review, session_time, status, created_at')
             .eq('student_id', studentId);
 
         if (error) return [];
@@ -502,7 +502,7 @@ export const getLeaveRequests = async (): Promise<LeaveRequest[]> => {
     try {
         const { data, error } = await supabase
             .from('leave_requests')
-            .select('*')
+            .select('id, student_id, student_name, start_date, end_date, reason, status, created_at')
             .order('created_at', { ascending: false });
 
         if (error) {
@@ -542,7 +542,7 @@ export const addLeaveRequest = async (request: Omit<LeaveRequest, 'id' | 'status
                 reason: request.reason,
                 status: 'pending'
             }])
-            .select('*')
+            .select('id, student_id, student_name, start_date, end_date, reason, status, created_at')
             .single();
 
         if (error) {
@@ -627,7 +627,7 @@ export const getStudentNotes = async (studentId: string) => {
     try {
         const { data, error } = await supabase
             .from('student_notes')
-            .select('*')
+            .select('id, content, type, created_at, created_by')
             .eq('student_id', studentId)
             .order('created_at', { ascending: false });
 
@@ -655,7 +655,7 @@ export const addStudentNote = async (note: { studentId: string, content: string,
                 type: note.type,
                 created_by: note.createdBy
             }])
-            .select('*')
+            .select('id, student_id, content, type, created_by, created_at')
             .single();
 
         if (error) throw error;
@@ -680,7 +680,7 @@ export const getLatestNotes = async () => {
     try {
         const { data, error } = await supabase
             .from('student_notes')
-            .select('*')
+            .select('student_id, content, created_at, created_by')
             .order('created_at', { ascending: false });
 
         if (error) throw error;

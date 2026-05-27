@@ -12,7 +12,7 @@ export const getConversations = async (userId: string): Promise<Conversation[]> 
     const cId = cleanId(userId);
     const { data, error } = await supabase
       .from('conversations')
-      .select('*')
+      .select('id, participants, participant_names, last_message, last_message_at, unread_counts, type')
       .contains('participants', [cId])
       .order('last_message_at', { ascending: false });
 
@@ -97,7 +97,7 @@ export const getMessages = async (conversationId: string): Promise<ChatMessage[]
   try {
     const { data, error } = await supabase
       .from('messages')
-      .select('*')
+      .select('id, conversation_id, sender_id, sender_name, sender_role, content, created_at, read_by, is_pinned')
       .eq('conversation_id', conversationId)
       .order('created_at', { ascending: true });
 
@@ -275,7 +275,7 @@ export const getOrCreateConversation = async (
   // 1. البحث عن محادثة موجودة بنفس المشاركين تماماً (باستخدام المعرفات المنظفة)
   const { data: existing } = await supabase
     .from('conversations')
-    .select('*')
+    .select('id, participants, participant_names, last_message, last_message_at, unread_counts, type')
     .contains('participants', sortedIds);
 
   const found = existing?.find(c =>

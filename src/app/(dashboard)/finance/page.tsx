@@ -75,7 +75,7 @@ export default function FinancePage() {
         queryFn: async () => {
             const { data, error } = await supabase
                 .from('free_exemptions')
-                .select('*')
+                .select('id, student_id, student_name, exempted_by, amount')
                 .eq('month', selectedMonth);
             return data || [];
         },

@@ -19,7 +19,7 @@ export const getTransactions = async (): Promise<FinancialTransaction[]> => {
     try {
         const { data, error } = await supabase
             .from('financial_transactions')
-            .select('*')
+            .select('id, amount, type, category, date, description, related_user_id, performed_by, created_at')
             .order('created_at', { ascending: false });
 
         if (error) {
@@ -48,7 +48,7 @@ export const getTransactionsByMonth = async (year: number, month: number): Promi
 
         const { data, error } = await supabase
             .from('financial_transactions')
-            .select('*')
+            .select('id, amount, type, category, date, description, related_user_id, performed_by, created_at')
             .gte('date', startDate)
             .lt('date', endDate) // Less than first day of next month
             .order('date', { ascending: false });
@@ -71,7 +71,7 @@ export const getIncomeByMonth = async (year: number, month: number): Promise<Fin
 
         const { data, error } = await supabase
             .from('financial_transactions')
-            .select('*')
+            .select('id, amount, type, category, date, description, related_user_id, performed_by, created_at')
             .eq('type', 'income')
             .gte('date', startDate)
             .lt('date', endDate);
@@ -94,7 +94,7 @@ export const getExpensesByMonth = async (year: number, month: number): Promise<F
 
         const { data, error } = await supabase
             .from('financial_transactions')
-            .select('*')
+            .select('id, amount, type, category, date, description, related_user_id, performed_by, created_at')
             .eq('type', 'expense')
             .gte('date', startDate)
             .lt('date', endDate);
@@ -187,7 +187,7 @@ export const getTeacherSalaryPayments = async (
 
         const { data, error } = await supabase
             .from('financial_transactions')
-            .select('*')
+            .select('id, amount, type, category, date, description, related_user_id, performed_by, created_at')
             .eq('type', 'expense')
             .eq('category', 'salary')
             .eq('related_user_id', userIdStr)
@@ -256,7 +256,7 @@ export const getTeacherHandovers = async (teacherId: string, monthKey: string): 
 
         const { data, error } = await supabase
             .from('financial_transactions')
-            .select('*')
+            .select('id, amount, type, category, date, description, related_user_id, performed_by, created_at')
             .eq('type', 'income')
             .eq('related_user_id', teacherId)
             .gte('date', startDate)

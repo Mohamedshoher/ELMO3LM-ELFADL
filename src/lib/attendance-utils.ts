@@ -44,7 +44,7 @@ export const getAllAttendance = async (monthKey: string): Promise<Record<string,
 
         const { data, error } = await supabase
             .from('attendance')
-            .select('*')
+            .select('id, student_id, date, status, created_at')
             .gte('date', startDate)
             .lte('date', endDate)
             .order('created_at', { ascending: true }) // ترتيب تصاعدي ليحل الجديد محل القديم في الـ Map
