@@ -5,7 +5,7 @@ export const getStudents = async (groupIds?: string[]): Promise<Student[]> => {
     try {
         let query = supabase
             .from('students')
-            .select('*');
+            .select('id, full_name, group_id, parent_phone, status, monthly_amount, birth_date, address, appointment, notes, enrollment_date, archived_date, created_at');
 
         if (groupIds && groupIds.length > 0) {
             query = query.in('group_id', groupIds);

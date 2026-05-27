@@ -6,7 +6,7 @@ export const getGroups = async (): Promise<Group[]> => {
     try {
         const { data, error } = await supabase
             .from('groups')
-            .select('*')
+            .select('id, name, teacher_id, schedule, max_students_per_hour')
             .order('name', { ascending: true });
 
         if (error) {
@@ -34,7 +34,7 @@ export const getGroupById = async (groupId: string): Promise<Group | null> => {
     try {
         const { data, error } = await supabase
             .from('groups')
-            .select('*')
+            .select('id, name, teacher_id, schedule, max_students_per_hour')
             .eq('id', groupId)
             .single();
 

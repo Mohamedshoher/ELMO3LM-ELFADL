@@ -12,7 +12,7 @@ export const getTeachers = async (): Promise<Teacher[]> => {
     try {
         const { data, error } = await supabase
             .from('teachers')
-            .select('*');
+            .select('id, full_name, phone, role, accounting_type, salary, partnership_percentage, password, responsible_sections, status, created_at');
 
         if (error) {
             console.error("Supabase error fetching teachers:", error);
