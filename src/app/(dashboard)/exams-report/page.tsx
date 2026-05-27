@@ -187,10 +187,22 @@ export default function ExamsReportPage() {
                 e.grade?.trim() !== 'يعاد' // استبعاد الاختبارات التي نتيجتها "يعاد"
             );
 
+            // تجميع الاختبارات حسب النوع مع العدد
+            const groupedByType = studentExams.reduce((acc: Record<string, { count: number; parts: string[] }>, e: any) => {
+                const t = e.type?.trim() || 'اختبار';
+                if (!acc[t]) acc[t] = { count: 0, parts: [] };
+                acc[t].count++;
+                acc[t].parts.push(e.part || e.courseName || '');
+                return acc;
+            }, {});
+            const examsList = Object.entries(groupedByType)
+                .map(([type, info]) => `${type}: ${info.count}`)
+                .join('\n- ');
+
             return {
                 ...s,
                 examsCount: studentExams.length,
-                examsList: studentExams.map((e: any) => `${e.part || e.courseName} (${e.type || 'اختبار'})`).join(' - '),
+                examsList,
                 groupName: groups?.find((g: any) => g.id === s.groupId)?.name || 'غير محدد'
             };
         })
