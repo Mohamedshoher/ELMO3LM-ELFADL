@@ -248,7 +248,7 @@ export default function DashboardOverview() {
                                     className="bg-white rounded-[24px] p-4 shadow-sm border border-gray-50 flex items-center gap-4 cursor-pointer hover:shadow-lg hover:shadow-blue-500/5 hover:-translate-y-1 transition-all group animate-[fadeIn_0.4s_ease-out_both]"
                                 >
                                     <div className={cn(
-                                        "w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-md transition-transform group-hover:rotate-6 shrink-0",
+                                        "w-10 h-10 rounded-xl flex items-center justify-center shadow-md transition-transform group-hover:rotate-6 shrink-0",
                                         stat.color,
                                         stat.onClick && isSyncing ? "animate-spin" : ""
                                     )}>

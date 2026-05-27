@@ -285,7 +285,7 @@ export default function SchedulesDashboard() {
                                         <div 
                                             key={idx} 
                                             onClick={() => setExpandedSlotId(isExpanded ? null : slotId)}
-                                            className={cn("p-4 rounded-2xl border transition-all duration-300 cursor-pointer hover:shadow-md", slot.statusBg, slot.percentage >= 100 ? "border-red-100" : "border-transparent hover:border-gray-200 bg-gray-50/50")}
+                                            className={cn("p-4 rounded-2xl border transition-all duration-300 cursor-pointer hover:shadow-md", slot.percentage >= 100 ? `${slot.statusBg} border-red-100` : "bg-gray-50/50 border-transparent hover:border-gray-200")}
                                         >
                                             <div className="flex justify-between items-start mb-3">
                                                 <div className="flex items-center gap-2">
