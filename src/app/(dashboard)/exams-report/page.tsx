@@ -214,19 +214,30 @@ export default function ExamsReportPage() {
                     const groupStudents = (students || []).filter((s: any) => s.groupId === g.id && s.status === 'active');
                     const groupStudentIds = new Set(groupStudents.map((s: any) => s.id));
 
-                    const groupExams = allExams.filter((e: any) => groupStudentIds.has(e.studentId));
-
                     // لكل نوع، نحسب عدد الطلاب الفريدين الذين اختبروه (مرة واحدة على الأقل)
                     const doneStudents = {
-                        new: new Set(groupExams.filter((e: any) => e.type === 'جديد').map((e: any) => e.studentId)),
-                        near: new Set(groupExams.filter((e: any) => e.type === 'ماضي قريب').map((e: any) => e.studentId)),
-                        far: new Set(groupExams.filter((e: any) => e.type === 'ماضي بعيد').map((e: any) => e.studentId)),
+                        new: new Set(),
+                        near: new Set(),
+                        far: new Set(),
                     };
+
+                    for (const e of allExams || []) {
+                        if (!groupStudentIds.has(e.studentId)) continue;
+                        const type = e.type?.trim();
+                        if (type === 'جديد') doneStudents.new.add(e.studentId);
+                        if (type === 'ماضي قريب') doneStudents.near.add(e.studentId);
+                        if (type === 'ماضي بعيد') doneStudents.far.add(e.studentId);
+                    }
 
                     return {
                         id: g.id,
                         name: g.name,
                         totalStudents: groupStudents.length,
+                        tested: {
+                            new: doneStudents.new.size,
+                            near: doneStudents.near.size,
+                            far: doneStudents.far.size,
+                        },
                         notTested: {
                             new: Math.max(0, groupStudents.length - doneStudents.new.size),
                             near: Math.max(0, groupStudents.length - doneStudents.near.size),
@@ -241,16 +252,29 @@ export default function ExamsReportPage() {
 
             {/* --- الهيدر (رأس الصفحة) --- */}
             <header className="bg-white/80 backdrop-blur-md border-b border-gray-100 sticky top-0 z-30 px-2 md:px-6 py-3">
-                <div className="flex items-center justify-between max-w-4xl mx-auto gap-2 md:gap-4">
-                    <h1 className="text-sm md:text-lg font-black text-gray-800">
-                    الاختبارات <span className="md:inline hidden">({currentMonthLabel})</span>
+                <div className="flex items-center max-w-4xl mx-auto gap-1 md:gap-4">
+                    <h1 className="text-sm md:text-lg font-black text-gray-800 shrink-0">
+                    اختبارات <span className="md:inline hidden">({currentMonthLabel})</span>
                     </h1>
 
+                    {/* مبدل النصف (للجوال) */}
+                    <button 
+                        onClick={() => setSelectedHalf(selectedHalf === 1 ? 2 : 1)}
+                        className="md:hidden flex items-center gap-1 bg-white border border-gray-200 rounded-lg px-1.5 py-1 shadow-sm"
+                        title={selectedHalf === 1 ? 'النصف الأول' : 'النصف الثاني'}
+                    >
+                        <span className={cn("text-[9px] font-black transition-colors", selectedHalf === 1 ? "text-blue-600" : "text-gray-300")}>1</span>
+                        <div className="relative w-5 h-3 rounded-full bg-gray-200">
+                            <div className={cn("absolute top-0.5 w-2 h-2 rounded-full bg-blue-500 transition-all", selectedHalf === 1 ? "right-0.5" : "right-2.5")} />
+                        </div>
+                        <span className={cn("text-[9px] font-black transition-colors", selectedHalf === 2 ? "text-blue-600" : "text-gray-300")}>2</span>
+                    </button>
+
                     {/* زر اختيار الشهر والنصف */}
-                    <div className="flex bg-gray-100/50 p-1 rounded-xl items-center gap-1 border border-gray-100 flex-row-reverse">
+                    <div className="flex bg-gray-100/50 p-1 rounded-xl items-center gap-1 border border-gray-100 flex-row-reverse mr-auto">
                         <div className="hidden md:flex items-center gap-1 bg-white px-2 py-1 rounded-lg border border-gray-200 shadow-sm flex-row-reverse">
-                            <button onClick={() => setSelectedHalf(1)} className={cn("px-2 py-1 text-xs font-bold rounded", selectedHalf === 1 ? "bg-blue-50 text-blue-600" : "text-gray-500")}>النصف الأول</button>
-                            <button onClick={() => setSelectedHalf(2)} className={cn("px-2 py-1 text-xs font-bold rounded", selectedHalf === 2 ? "bg-blue-50 text-blue-600" : "text-gray-500")}>النصف الثاني</button>
+                            <button onClick={() => setSelectedHalf(1)} className={cn("px-2 py-1 text-xs font-bold rounded transition-colors", selectedHalf === 1 ? "bg-blue-50 text-blue-600" : "text-gray-500")}>النصف الأول</button>
+                            <button onClick={() => setSelectedHalf(2)} className={cn("px-2 py-1 text-xs font-bold rounded transition-colors", selectedHalf === 2 ? "bg-blue-50 text-blue-600" : "text-gray-500")}>النصف الثاني</button>
                         </div>
                         <div className="flex items-center gap-0.5 md:gap-1 bg-white p-0.5 md:p-1 rounded-lg border border-gray-200 shadow-sm justify-center">
                             <button onClick={goToNextMonth} className="w-5 h-5 md:w-6 md:h-6 flex items-center justify-center hover:bg-gray-100 rounded text-gray-600 transition-colors">
@@ -488,17 +512,7 @@ export default function ExamsReportPage() {
 
                             {/* الرسوم البيانية (أشرطة التقدم) */}
                             <div className="space-y-6">
-                                {(() => {
-                                    const maxVal = Math.max(...performanceData.map((d: any) => {
-                                        if (performanceFilter === 'all') {
-                                            return Math.max(d.notTested.new, d.notTested.near, d.notTested.far, 1);
-                                        }
-                                        if (performanceFilter === 'new') return d.notTested.new;
-                                        if (performanceFilter === 'near') return d.notTested.near;
-                                        return d.notTested.far;
-                                    }), 1);
-
-                                    return performanceData.map((data: any) => {
+                                {performanceData.map((data: any) => {
                                         const totalSt = data.totalStudents;
 
                                         if (performanceFilter === 'all') {
@@ -511,15 +525,19 @@ export default function ExamsReportPage() {
                                                     <div className="space-y-2 pr-2">
                                                         {(['new', 'near', 'far'] as const).map(type => {
                                                             const label = { new: 'جديد', near: 'ماضي قريب', far: 'بعيد' }[type];
-                                                            const color = { new: 'from-green-400 to-emerald-500', near: 'from-blue-400 to-blue-500', far: 'from-purple-400 to-purple-500' }[type];
-                                                            const val = data.notTested[type];
+                                                            const testedVal = data.tested[type];
+                                                            const notTestedVal = data.notTested[type];
                                                             return (
                                                                 <div key={type} className="flex items-center gap-2">
                                                                     <span className="text-[11px] font-bold text-gray-400 w-16 shrink-0 text-left">{label}</span>
-                                                                    <div className="flex-1 h-4 bg-gray-100 rounded-full overflow-hidden shadow-inner" style={{ direction: 'ltr' }}>
-                                                                        <div style={{ width: `${(val / Math.max(totalSt, 1)) * 100}%` }} className={`h-full bg-gradient-to-l ${color} rounded-full animate-[chartFill_0.7s_ease-out]`} />
+                                                                    <div className="flex-1 h-4 bg-gray-100 rounded-full overflow-hidden shadow-inner relative">
+                                                                        <div style={{ width: `${(testedVal / Math.max(totalSt, 1)) * 100}%` }} className="absolute right-0 top-0 h-full bg-gradient-to-l from-green-400 to-emerald-500 rounded-full animate-[chartFill_0.7s_ease-out]" />
                                                                     </div>
-                                                                    <span className="text-[11px] font-black text-gray-500 font-sans w-6 text-center">{val}</span>
+                                                                    <span className="flex items-center gap-1 text-[11px] font-black text-gray-500 font-sans">
+                                                                        <span className="text-emerald-600">{testedVal}</span>
+                                                                        <span className="text-gray-300">/</span>
+                                                                        <span className="text-gray-400">{totalSt}</span>
+                                                                    </span>
                                                                 </div>
                                                             );
                                                         })}
@@ -528,27 +546,25 @@ export default function ExamsReportPage() {
                                             );
                                         }
 
-                                        const notTestedVal = (data.notTested as any)[performanceFilter];
-                                        const barWidth = `${(notTestedVal / maxVal) * 100}%`;
+                                        const testedVal = (data.tested as any)[performanceFilter];
+                                        const barWidth = `${(testedVal / Math.max(totalSt, 1)) * 100}%`;
 
                                         return (
                                             <div key={data.id} className="space-y-2">
                                                 <div className="flex flex-row-reverse items-center justify-between px-1">
                                                     <span className="text-sm font-bold text-gray-700">{data.name}</span>
                                                     <span className="text-xs font-black text-gray-400 font-sans">
-                                                        <span className="text-red-500">{notTestedVal} لم يختبر</span>
-                                                        <span className="text-gray-300 mx-1.5">|</span>
-                                                        <span className="text-gray-500">{totalSt} طالب</span>
+                                                        <span className="text-emerald-600">{testedVal}</span>
+                                                        <span className="text-gray-300">/</span>
+                                                        <span className="text-gray-500">{totalSt} اختبر</span>
                                                     </span>
                                                 </div>
-                                                {/* شريط من اليسار لليمين (عكسي) لإظهار عدد من لم يختبر */}
-                                                <div className="h-6 w-full bg-gray-100 rounded-full overflow-hidden shadow-inner" style={{ direction: 'ltr' }}>
-                                                    <div style={{ width: barWidth }} className="h-full bg-gradient-to-l from-red-400 to-orange-400 rounded-full animate-[chartFill_0.7s_ease-out]" />
+                                                <div className="h-6 w-full bg-gray-100 rounded-full overflow-hidden shadow-inner relative">
+                                                    <div style={{ width: barWidth }} className="absolute right-0 top-0 h-full bg-gradient-to-l from-green-400 to-emerald-500 rounded-full animate-[chartFill_0.7s_ease-out]" />
                                                 </div>
                                             </div>
                                         );
-                                    });
-                                })()}
+                                })}
                             </div>
                         </div>
                     )}
