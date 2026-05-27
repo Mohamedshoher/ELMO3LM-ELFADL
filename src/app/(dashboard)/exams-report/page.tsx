@@ -187,18 +187,9 @@ export default function ExamsReportPage() {
                 e.grade?.trim() !== 'يعاد' // استبعاد الاختبارات التي نتيجتها "يعاد"
             );
 
-            // تجميع الاختبارات حسب النوع مع السورة والتقدير
-            const groupedByType = studentExams.reduce((acc: Record<string, { count: number; items: string[] }>, e: any) => {
-                const t = e.type?.trim() || 'اختبار';
-                if (!acc[t]) acc[t] = { count: 0, items: [] };
-                acc[t].count++;
-                const grade = e.grade?.trim() || '';
-                acc[t].items.push(`${e.part || e.courseName || ''} (${grade || 'لم يسجل'})`);
-                return acc;
-            }, {});
-            const examsList = Object.entries(groupedByType)
-                .map(([type, info]) => `- ${type}: ${info.count}\n  ${info.items.join('\n  ')}`)
-                .join('\n');
+            const examsList = studentExams
+                .map((e: any) => `${e.surah || 'اختبار'} (${e.type?.trim() || 'اختبار'}: ${e.grade?.trim() || 'لم يسجل'})`)
+                .join('\n- ');
 
             return {
                 ...s,
