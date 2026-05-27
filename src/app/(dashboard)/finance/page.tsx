@@ -12,6 +12,7 @@ import {
     ChevronRight,
     Calendar,
     AlertCircle,
+    X,
 } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -21,6 +22,7 @@ import { getTransactionsByMonth } from '@/features/finance/services/financeServi
 import { getFeesByMonth } from '@/features/students/services/recordsService';
 import { useAuthStore } from '@/store/useAuthStore';
 import { supabase } from '@/lib/supabase';
+import { FadeIn, SlideIn } from '@/components/ui/transition';
 import type { TransactionData } from '@/features/finance/components/AddTransactionModal';
 import { useTeachers } from '@/features/teachers/hooks/useTeachers';
 import { useStudents } from '@/features/students/hooks/useStudents';
@@ -42,6 +44,8 @@ export default function FinancePage() {
     const [isClient, setIsClient] = useState(false);
     const [showMonthPicker, setShowMonthPicker] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isSalaryStatusOpen, setIsSalaryStatusOpen] = useState(false);
+    const [isDeficitOpen, setIsDeficitOpen] = useState(false);
     const queryClient = useQueryClient();
     const { data: teachers = [] } = useTeachers();
     const { data: students = [] } = useStudents();
@@ -228,6 +232,77 @@ export default function FinancePage() {
         };
     }, [filteredTransactions, teachers, students, groups, allFees, user?.displayName, exemptions, selectedMonth, monthDeductions, allAttendanceMap]);
 
+    const teacherPaymentStatus = useMemo(() => {
+        const salaryPaymentsThisMonth = filteredTransactions.filter(tr => tr.type === 'expense' && tr.category === 'salary');
+        const paidMap = new Map<string, number>();
+        salaryPaymentsThisMonth.forEach(p => {
+            if (p.relatedUserId) paidMap.set(p.relatedUserId, (paidMap.get(p.relatedUserId) || 0) + p.amount);
+        });
+
+        const deductionMap = new Map<string, number>();
+        const filteredDeductions = monthDeductions.filter(d => {
+            const dm = `${new Date(d.appliedDate).getFullYear()}-${String(new Date(d.appliedDate).getMonth() + 1).padStart(2, '0')}`;
+            return dm === selectedMonth && d.status === 'applied' && !d.reason.startsWith('مكافأة:');
+        });
+        teachers.forEach(t => {
+            const manual = filteredDeductions.filter(d => d.teacherId === t.id).reduce((a, d) => a + d.amount, 0);
+            const att = allAttendanceMap[t.id] || {};
+            const absence = Object.values(att).reduce((acc: number, stat: any) => { if (stat === 'absent') return acc + 1; if (stat === 'half') return acc + 0.5; if (stat === 'quarter') return acc + 0.25; return acc; }, 0);
+            const daily = t.accountingType === 'partnership' ? ((Number(t.partnershipPercentage) || 0) / 22) : ((Number(t.salary) || 1000) / 22);
+            deductionMap.set(t.id, Math.round((manual + absence) * daily));
+        });
+
+        const activeTeachers = teachers.filter(t => t.status !== 'inactive');
+        const allWithStatus = activeTeachers.map(t => {
+            const paidAmount = paidMap.get(t.id) || 0;
+            const entitlement = Number(t.salary) || 0;
+            const deduction = deductionMap.get(t.id) || 0;
+            const afterDeduction = Math.max(0, entitlement - deduction);
+            const remaining = Math.max(0, afterDeduction - paidAmount);
+            return { teacher: t, paidAmount, entitlement, deduction, afterDeduction, remaining };
+        });
+
+        const paid = allWithStatus.filter(t => t.paidAmount > 0);
+        const unpaid = allWithStatus.filter(t => t.paidAmount === 0);
+        return {
+            all: allWithStatus, paid, unpaid,
+            totalPaidAmount: allWithStatus.reduce((s, t) => s + t.paidAmount, 0),
+            totalRemaining: allWithStatus.reduce((s, t) => s + t.remaining, 0),
+            paidCount: paid.length, unpaidCount: unpaid.length, totalCount: activeTeachers.length,
+        };
+    }, [filteredTransactions, teachers, selectedMonth, monthDeductions, allAttendanceMap]);
+
+    const deficitPerTeacher = useMemo(() => {
+        const normalize = (s: string) => { if (!s) return ''; return s.replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي').replace(/[ءئؤ]/g, '').replace(/[ًٌٍَُِّ]/g, '').replace(/\s+/g, '').trim(); };
+        const exemptedIds = new Set(exemptions.map((e: any) => e.student_id));
+
+        const collectionsByTeacher: Record<string, { amount: number; count: number }> = {};
+        teachers.filter(t => t.status === 'active' || !t.status).forEach(t => { collectionsByTeacher[t.id] = { amount: 0, count: 0 }; });
+
+        allFees.forEach(fee => {
+            const matched = teachers.find(t => fee.createdBy === t.fullName || fee.createdBy === t.phone || (fee.createdBy && normalize(fee.createdBy) === normalize(t.fullName)));
+            if (matched) {
+                if (!collectionsByTeacher[matched.id]) collectionsByTeacher[matched.id] = { amount: 0, count: 0 };
+                collectionsByTeacher[matched.id].amount += Number(fee.amount?.toString().replace(/[^0-9.]/g, '')) || 0;
+                collectionsByTeacher[matched.id].count += 1;
+            }
+        });
+
+        return Object.entries(collectionsByTeacher).map(([id, data]) => {
+            const teacher = teachers.find(t => t.id === id);
+            const tGroups = groups.filter(g => g.teacherId === id).map(g => g.id);
+            const tStudents = students.filter(s => s.groupId && tGroups.includes(s.groupId) && s.status !== 'archived' && (!s.enrollmentDate || s.enrollmentDate.substring(0, 7) <= selectedMonth));
+            let deficit = 0, expected = 0;
+            tStudents.forEach(s => {
+                const paid = allFees.filter((f: any) => f.studentId === s.id).reduce((a, f) => a + (Number(f.amount?.toString().replace(/[^0-9.]/g, '')) || 0), 0);
+                const amt = Number(s.monthlyAmount) || 0;
+                expected += amt;
+                if (amt > paid && !exemptedIds.has(s.id)) deficit += amt - paid;
+            });
+            return { teacherId: id, teacherName: teacher?.fullName || id, collected: data.amount, count: data.count, deficit, expected, unpaidStudents: tStudents.filter(s => { const paid = allFees.filter((f: any) => f.studentId === s.id).reduce((a, f) => a + (Number(f.amount?.toString().replace(/[^0-9.]/g, '')) || 0), 0); return paid < (Number(s.monthlyAmount) || 0); }).length };
+        }).sort((a, b) => b.deficit - a.deficit);
+    }, [teachers, allFees, students, groups, exemptions, selectedMonth]);
+
     const handleAddTransaction = () => {
         setIsModalOpen(false);
         queryClient.invalidateQueries({ queryKey: ['transactions', selectedMonth] });
@@ -238,6 +313,133 @@ export default function FinancePage() {
     return (
         <div className="pb-32 transition-all duration-500 bg-gray-50/50 min-h-screen font-sans">
             <AddTransactionModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onAdd={handleAddTransaction} />
+
+            {/* Salary Status Modal */}
+            <FadeIn show={isSalaryStatusOpen} className="fixed inset-0 z-[100]">
+                <div onClick={() => setIsSalaryStatusOpen(false)} className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" />
+            </FadeIn>
+            <SlideIn show={isSalaryStatusOpen} className="fixed top-[10%] left-1/2 -translate-x-1/2 w-[95%] max-w-2xl bg-white rounded-[40px] shadow-2xl z-[101] overflow-hidden flex flex-col max-h-[80vh] border border-white/20">
+                <div className="p-6 border-b border-gray-50 flex items-center justify-between bg-white shrink-0">
+                    <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600">
+                            <Wallet size={24} />
+                        </div>
+                        <div className="text-right">
+                            <h3 className="text-xl font-black text-gray-900">حالة صرف الرواتب</h3>
+                            <p className="text-xs font-bold text-gray-400 mt-0.5">المدرسين الذين قبضوا والذين لم يقبضوا</p>
+                        </div>
+                    </div>
+                    <button onClick={() => setIsSalaryStatusOpen(false)} className="w-10 h-10 rounded-full bg-gray-50 text-gray-400 hover:bg-gray-100 flex items-center justify-center transition-colors">
+                        <X size={20} />
+                    </button>
+                </div>
+
+                <div className="p-6 overflow-y-auto no-scrollbar space-y-6">
+                    <div>
+                        <div className="flex items-center justify-between mb-3">
+                            <div className="text-sm font-black text-green-700 bg-green-50 px-3 py-1 rounded-full">✅ تم الصرف: {teacherPaymentStatus.paidCount}</div>
+                        </div>
+                        <div className="space-y-2">
+                            {teacherPaymentStatus.paid.length === 0 ? (
+                                <p className="text-xs text-gray-400 font-bold text-center py-4 bg-gray-50 rounded-2xl">لم يتم صرف راتب أي مدرس هذا الشهر.</p>
+                            ) : (
+                                teacherPaymentStatus.paid.map(t => (
+                                    <div key={t.teacher.id} className="flex items-center justify-between p-3 bg-green-50/50 rounded-2xl border border-green-100/50">
+                                        <div className="text-right">
+                                            <span className="font-black text-green-700 text-sm block">{t.teacher.fullName}</span>
+                                            {t.remaining > 0 && <span className="text-[10px] font-bold text-amber-500">بقي: {t.remaining.toLocaleString()} ج.م</span>}
+                                        </div>
+                                        <div className="text-left">
+                                            <span className="font-black text-green-600 text-sm font-sans block">صرف: {t.paidAmount.toLocaleString()} ج.م</span>
+                                            <span className="text-[9px] text-gray-400 font-bold">صافي: {t.afterDeduction.toLocaleString()} ج.م</span>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="pt-4 border-t border-gray-100">
+                        <div className="flex items-center justify-between mb-3">
+                            <div className="text-sm font-black text-amber-700 bg-amber-50 px-3 py-1 rounded-full">⏳ لم يصرف بعد: {teacherPaymentStatus.unpaidCount}</div>
+                        </div>
+                        <div className="space-y-2">
+                            {teacherPaymentStatus.unpaid.length === 0 ? (
+                                <p className="text-xs text-gray-400 font-bold text-center py-4 bg-gray-50 rounded-2xl">تم صرف رواتب جميع المدرسين لهذا الشهر.</p>
+                            ) : (
+                                teacherPaymentStatus.unpaid.map(t => (
+                                    <div key={t.teacher.id} className="flex items-center justify-between p-3 bg-amber-50/50 rounded-2xl border border-amber-100/50">
+                                        <span className="font-black text-amber-700 text-sm">{t.teacher.fullName}</span>
+                                        <div className="text-left">
+                                            <span className="font-black text-amber-600 text-sm font-sans block">بقي: {t.remaining.toLocaleString()} ج.م</span>
+                                            <span className="text-[9px] text-gray-400 font-bold">صافي بعد الخصم: {t.afterDeduction.toLocaleString()} ج.م</span>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                <div className="p-6 bg-gray-50/50 border-t border-gray-50 shrink-0 space-y-2">
+                    <div className="flex items-center justify-between">
+                        <span className="font-black text-emerald-600 font-sans">{teacherPaymentStatus.totalPaidAmount.toLocaleString()} ج.م</span>
+                        <span className="text-xs font-black text-gray-400">المبلغ المصروف</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <span className="font-black text-amber-600 font-sans">{teacherPaymentStatus.totalRemaining.toLocaleString()} ج.م</span>
+                        <span className="text-xs font-black text-gray-400">المبلغ المتبقي للصرف</span>
+                    </div>
+                </div>
+            </SlideIn>
+
+            {/* Deficit Modal */}
+            <FadeIn show={isDeficitOpen} className="fixed inset-0 z-[100]">
+                <div onClick={() => setIsDeficitOpen(false)} className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" />
+            </FadeIn>
+            <SlideIn show={isDeficitOpen} className="fixed top-[10%] left-1/2 -translate-x-1/2 w-[95%] max-w-2xl bg-white rounded-[40px] shadow-2xl z-[101] overflow-hidden flex flex-col max-h-[80vh] border border-white/20">
+                <div className="p-6 border-b border-gray-50 flex items-center justify-between bg-white shrink-0">
+                    <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-600">
+                            <AlertCircle size={24} />
+                        </div>
+                        <div className="text-right">
+                            <h3 className="text-xl font-black text-gray-900">تفاصيل العجز</h3>
+                            <p className="text-xs font-bold text-gray-400 mt-0.5">العجز لكل مدرس عن شهر {months.find(m => m.value === selectedMonth)?.label}</p>
+                        </div>
+                    </div>
+                    <button onClick={() => setIsDeficitOpen(false)} className="w-10 h-10 rounded-full bg-gray-50 text-gray-400 hover:bg-gray-100 flex items-center justify-center transition-colors">
+                        <X size={20} />
+                    </button>
+                </div>
+
+                <div className="p-6 overflow-y-auto no-scrollbar space-y-3">
+                    {deficitPerTeacher.filter(d => d.deficit > 0).length === 0 ? (
+                        <div className="py-20 text-center text-gray-400 text-sm font-bold bg-gray-50/50 rounded-[32px] border-2 border-dashed border-gray-100">
+                            لا يوجد عجز هذا الشهر.
+                        </div>
+                    ) : (
+                        deficitPerTeacher.filter(d => d.deficit > 0).map(d => (
+                            <div key={d.teacherId} className="bg-white rounded-2xl p-4 border border-amber-100 shadow-sm flex items-center justify-between hover:border-amber-300 transition-all">
+                                <div className="text-right">
+                                    <p className="font-black text-gray-900 text-sm">{d.teacherName}</p>
+                                    <p className="text-[10px] text-gray-400 font-bold">محصل: {d.collected.toLocaleString()} ج.م | متوقع: {d.expected.toLocaleString()} ج.م | طلاب غير مسددين: {d.unpaidStudents}</p>
+                                </div>
+                                <p className="text-lg font-black text-amber-600 font-sans">{d.deficit.toLocaleString()} <span className="text-[9px]">ج.م</span></p>
+                            </div>
+                        ))
+                    )}
+                </div>
+
+                <div className="p-6 bg-gray-50/50 border-t border-gray-50 shrink-0">
+                    <div className="flex items-center justify-between">
+                        <div className="text-2xl font-black text-amber-600 font-sans">
+                            {totalGlobalDeficit.toLocaleString()} <span className="text-sm">ج.م</span>
+                        </div>
+                        <p className="text-xs font-black text-gray-400">إجمالي العجز</p>
+                    </div>
+                </div>
+            </SlideIn>
 
             {/* Sticky Header */}
             <div className="sticky top-0 z-[70] bg-gray-50/95 backdrop-blur-xl px-4 py-4 border-b border-gray-100 shadow-sm">
@@ -367,7 +569,7 @@ export default function FinancePage() {
                         </Link>
 
                         {/* Deficit */}
-                        <Link href="/finance/teachers" className="bg-white/90 backdrop-blur-xl border border-amber-100/50 rounded-[32px] p-6 flex flex-col justify-between min-h-[160px] shadow-sm hover:shadow-2xl hover:shadow-amber-500/10 hover:-translate-y-1 transition-all group">
+                        <button onClick={() => setIsDeficitOpen(true)} className="bg-white/90 backdrop-blur-xl border border-amber-100/50 rounded-[32px] p-6 flex flex-col justify-between min-h-[160px] shadow-sm hover:shadow-2xl hover:shadow-amber-500/10 hover:-translate-y-1 transition-all group text-right w-full">
                             <div className="w-12 h-12 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center shadow-sm border border-amber-100/30">
                                 <AlertCircle size={24} />
                             </div>
@@ -377,7 +579,7 @@ export default function FinancePage() {
                                     {totalGlobalDeficit.toLocaleString()} <span className="text-xs">ج.م</span>
                                 </h3>
                             </div>
-                        </Link>
+                        </button>
 
                         {/* Exempted */}
                         <Link href="/finance/teachers" className="bg-white/90 backdrop-blur-xl border border-teal-100/50 rounded-[32px] p-6 flex flex-col justify-between min-h-[160px] shadow-sm hover:shadow-2xl hover:shadow-teal-500/10 hover:-translate-y-1 transition-all group">
@@ -406,19 +608,19 @@ export default function FinancePage() {
                         </Link>
 
                         {/* Salary Status */}
-                        <Link href="/finance/expenses" className="bg-white/90 backdrop-blur-xl border border-emerald-100/50 rounded-[32px] p-6 flex flex-col justify-between min-h-[160px] shadow-sm hover:shadow-2xl hover:shadow-emerald-500/10 hover:-translate-y-1 transition-all group">
+                        <button onClick={() => setIsSalaryStatusOpen(true)} className="bg-white/90 backdrop-blur-xl border border-emerald-100/50 rounded-[32px] p-6 flex flex-col justify-between min-h-[160px] shadow-sm hover:shadow-2xl hover:shadow-emerald-500/10 hover:-translate-y-1 transition-all group text-right w-full">
                             <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center shadow-sm border border-emerald-100/30">
                                 <Wallet size={24} />
                             </div>
-                            <div className="text-right space-y-1">
+                            <div className="space-y-1">
                                 <p className="text-[11px] font-black text-gray-400 mb-1">حالة الرواتب</p>
                                 <div className="flex items-center justify-between gap-2">
-                                    <span className="text-xs font-black text-green-600 bg-green-50 px-2 py-0.5 rounded-full">✅ {paidCount}</span>
-                                    <span className="text-xs font-black text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">⏳ {unpaidCount}</span>
+                                    <span className="text-xs font-black text-green-600 bg-green-50 px-2 py-0.5 rounded-full">✅ {teacherPaymentStatus.paidCount}</span>
+                                    <span className="text-xs font-black text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">⏳ {teacherPaymentStatus.unpaidCount}</span>
                                 </div>
-                                <p className="text-[10px] font-bold text-gray-400">المتبقي: <span className="font-black text-amber-600 font-sans">{totalRemaining.toLocaleString()} ج.م</span></p>
+                                <p className="text-[10px] font-bold text-gray-400">المتبقي: <span className="font-black text-amber-600 font-sans">{teacherPaymentStatus.totalRemaining.toLocaleString()} ج.م</span></p>
                             </div>
-                        </Link>
+                        </button>
 
                         {/* Total Received */}
                         <Link href="/finance/income" className="bg-white/90 backdrop-blur-xl border border-green-100/50 rounded-[32px] p-6 flex flex-col justify-between min-h-[160px] shadow-sm hover:shadow-2xl hover:shadow-green-500/10 hover:-translate-y-1 transition-all group">

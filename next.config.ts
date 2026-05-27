@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 import withPWA from "@ducanh2912/next-pwa";
+import withBundleAnalyzer from '@next/bundle-analyzer';
 
 const pwaConfig = withPWA({
     dest: "public",
@@ -67,8 +68,12 @@ const pwaConfig = withPWA({
     },
 });
 
+const withBundleAnalyzerConfig = withBundleAnalyzer({
+    enabled: process.env.ANALYZE === 'true',
+});
+
 const nextConfig: NextConfig = {
     turbopack: {},
 };
 
-export default pwaConfig(nextConfig);
+export default withBundleAnalyzerConfig(pwaConfig(nextConfig));
