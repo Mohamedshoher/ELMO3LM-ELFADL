@@ -1,4 +1,6 @@
-import ArchiveList from '@/features/students/components/ArchiveList';
+import dynamic from 'next/dynamic';
+
+const ArchiveList = dynamic(() => import('@/features/students/components/ArchiveList'));
 
 export default function StudentArchivePage() {
     return (

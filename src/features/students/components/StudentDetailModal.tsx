@@ -6,16 +6,17 @@ import { cn } from '../../../lib/utils';
 import { useStudents } from '../hooks/useStudents';
 import { useStudentRecords } from '../hooks/useStudentRecords';
 import { StudentDetailModalProps } from '../hooks/types';
+import dynamic from 'next/dynamic';
 
-// استيراد المكونات الفرعية التي قمنا بفصلها
+// استيراد المكونات الفرعية
 import ModalHeader from './ModalHeader';
 import AttendanceTab from './AttendanceTab';
-import ScheduleTab from './ScheduleTab';
 import FeesTab from './FeesTab';
 import ExamsTab from './ExamsTab';
+
+const ScheduleTab = dynamic(() => import('./ScheduleTab'), { ssr: false });
 import NotesTab from './NotesTab';
 import { useGroups } from '@/features/groups/hooks/useGroups';
-import dynamic from 'next/dynamic';
 import { FadeIn, SlideIn } from '@/components/ui/transition';
 
 
