@@ -385,85 +385,56 @@ export default function ExamsReportPage() {
 
                     {/* --- التبويب 2: الطلاب الأكثر اختباراً --- */}
                     {activeTab === 'mostTested' && (
-                        <div className="space-y-6 animate-[fadeIn_0.3s_ease-out]">
-                            <div className="flex flex-col md:flex-row-reverse items-center justify-between gap-4">
-                                <div className="flex flex-row-reverse items-center gap-2 md:gap-3 flex-wrap justify-center">
-                                    {/* فلاتر إضافية للعدد الأدنى والمجموعة */}
-                                    <div className="relative">
-                                        <select
-                                            value={selectedGroupId}
-                                            onChange={(e) => setSelectedGroupId(e.target.value)}
-                                            className="appearance-none bg-white border border-gray-100 px-6 py-1.5 md:px-10 md:py-2.5 pr-3 md:pr-4 rounded-lg md:rounded-2xl text-[10px] md:text-sm font-bold text-gray-600 focus:outline-none text-right"
+                        <div className="space-y-3">
+                            {/* عداد الطلاب */}
+                            <div className="flex items-center justify-between px-1 mb-2">
+                                <span className="text-[10px] md:text-xs font-bold text-gray-400">طلاب القائمة</span>
+                                <span className="bg-blue-100 text-blue-700 text-[10px] md:text-xs font-black px-2 md:px-3 py-0.5 md:py-1 rounded-full font-sans">{mostTestedStudents.length} طالب</span>
+                            </div>
+                            {mostTestedStudents.map((student: any) => (
+                                <div
+                                    key={student.id}
+                                    onClick={() => setSelectedStudentForDetails(student)}
+                                    className="bg-white rounded-[16px] md:rounded-[20px] p-2.5 md:p-3 flex items-center justify-between border border-gray-100 shadow-sm group cursor-pointer"
+                                >
+                                    <div className="flex-1 min-w-0 flex items-center gap-2 md:gap-3">
+                                        <div className="w-7 h-7 md:w-9 md:h-9 bg-blue-50 rounded-[10px] md:rounded-xl flex items-center justify-center text-blue-600 shrink-0">
+                                            <User size={14} className="md:size-[18px]" />
+                                        </div>
+                                        <div className="text-right flex-1 min-w-0">
+                                            <h3 className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors text-sm md:text-base truncate">{student.fullName}</h3>
+                                            <span className="text-[10px] md:text-xs text-gray-400 font-bold truncate block">{student.groupName}</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
+                                        <div className="bg-blue-50 px-2 md:px-3 py-1 md:py-1.5 rounded-[8px] md:rounded-lg flex items-center gap-1 md:gap-2">
+                                            <span className="text-blue-600 font-black text-xs md:text-sm font-sans">{student.examsCount}</span>
+                                            <span className="text-[9px] md:text-xs text-blue-400 font-bold">اختبار</span>
+                                        </div>
+                                        
+                                        <button 
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                const phone = student.parentPhone || student.studentPhone || '';
+                                                const cleanPhone = phone.replace(/[^0-9]/g, '');
+                                                const last6Digits = cleanPhone.slice(-6);
+                                                
+                                                const message = `السلام عليكم ورحمة الله وبركاته 🌹\nنزف إليكم سعادة وفرحاً بتفوق الطالب/ة: *${student.fullName}*\nلقد أتم اختباراته بنجاح لهذا الشهر (${currentMonthLabel}) 🌟\n\nما تم اختباره:\n- ${student.examsList}\n\nنتمنى له/لها دوام التوفيق والنجاح.\n\nيمكنكم متابعة النتائج والتسجيل في الحلقات عبر رابط موقعنا:\n🔗 https://shatpycenter-um2b.vercel.app/\n\n🔐 بيانات الدخول:\nاسم المستخدم: *رقم الهاتف المسجل*\nالباسورد: *آخر 6 أرقام (${last6Digits})*\n\nمع تحيات إدارة مركز الشاطبي 🏛️`;
+                                                window.open(getWhatsAppUrl(phone, message), '_blank');
+                                            }}
+                                            className="w-7 h-7 md:w-9 md:h-9 bg-green-50 text-green-600 rounded-[10px] md:rounded-xl flex items-center justify-center hover:bg-green-600 hover:text-white transition-all shadow-sm border border-green-100"
+                                            title="إرسال التهنئة عبر واتساب"
                                         >
-                                            <option value="all"> المجموعات</option>
-                                            {filteredGroupsList?.map((g: any) => <option key={g.id} value={g.id}>{g.name}</option>)}
-                                        </select>
-                                        <ChevronDown size={12} className="absolute left-2 md:left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                                    </div>
-                                    <div className="flex flex-row-reverse items-center bg-white border border-gray-100 px-2 md:px-3 py-1 md:py-1.5 rounded-lg md:rounded-2xl gap-1 md:gap-2">
-                                        <span className="text-[10px] md:text-xs font-bold text-gray-400">الأقل:</span>
-                                        <input
-                                            type="number"
-                                            value={examsLimit}
-                                            onChange={(e) => setExamsLimit(e.target.value)}
-                                            className="w-8 md:w-10 h-6 md:h-8 bg-gray-50 rounded-lg text-center font-black text-blue-600 border-none focus:outline-none text-xs"
-                                        />
-                                        <span className="text-[10px] md:text-xs font-bold text-gray-400">اختبار</span>
+                                            <MessageCircle size={14} className="md:size-[18px]" />
+                                        </button>
+
+                                        <button className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400">
+                                            <ChevronRight size={12} className="md:size-[16px]" />
+                                        </button>
                                     </div>
                                 </div>
-                            </div>
-
-                            <div className="space-y-3">
-                                {/* عداد الطلاب */}
-                                <div className="flex items-center justify-between px-1 mb-2">
-                                    <span className="text-xs font-bold text-gray-400">طلاب القائمة</span>
-                                    <span className="bg-blue-100 text-blue-700 text-xs font-black px-3 py-1 rounded-full font-sans">{mostTestedStudents.length} طالب</span>
-                                </div>
-                                {mostTestedStudents.map((student: any) => (
-                                    <div
-                                        key={student.id}
-                                        onClick={() => setSelectedStudentForDetails(student)}
-                                        className="bg-white rounded-[20px] p-3 flex items-center justify-between border border-gray-100 shadow-sm group cursor-pointer"
-                                    >
-                                        <div className="flex-1 min-w-0 flex items-center gap-3">
-                                            <div className="w-9 h-9 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600 shrink-0">
-                                                <User size={18} />
-                                            </div>
-                                            <div className="text-right flex-1 min-w-0">
-                                                <h3 className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors text-base truncate">{student.fullName}</h3>
-                                                <span className="text-xs text-gray-400 font-bold truncate block">{student.groupName}</span>
-                                            </div>
-                                        </div>
-
-                                        <div className="flex items-center gap-2 shrink-0">
-                                            <div className="bg-blue-50 px-3 py-1.5 rounded-lg flex items-center gap-2">
-                                                <span className="text-blue-600 font-black text-sm font-sans">{student.examsCount}</span>
-                                                <span className="text-xs text-blue-400 font-bold">اختبار</span>
-                                            </div>
-                                            
-                                            <button 
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    const phone = student.parentPhone || student.studentPhone || '';
-                                                    const cleanPhone = phone.replace(/[^0-9]/g, '');
-                                                    const last6Digits = cleanPhone.slice(-6);
-                                                    
-                                                    const message = `السلام عليكم ورحمة الله وبركاته 🌹\nنزف إليكم سعادة وفرحاً بتفوق الطالب/ة: *${student.fullName}*\nلقد أتم اختباراته بنجاح لهذا الشهر (${currentMonthLabel}) 🌟\n\nما تم اختباره:\n- ${student.examsList}\n\nنتمنى له/لها دوام التوفيق والنجاح.\n\nيمكنكم متابعة النتائج والتسجيل في الحلقات عبر رابط موقعنا:\n🔗 https://shatpycenter-um2b.vercel.app/\n\n🔐 بيانات الدخول:\nاسم المستخدم: *رقم الهاتف المسجل*\nالباسورد: *آخر 6 أرقام (${last6Digits})*\n\nمع تحيات إدارة مركز الشاطبي 🏛️`;
-                                                    window.open(getWhatsAppUrl(phone, message), '_blank');
-                                                }}
-                                                className="w-9 h-9 bg-green-50 text-green-600 rounded-xl flex items-center justify-center hover:bg-green-600 hover:text-white transition-all shadow-sm border border-green-100"
-                                                title="إرسال التهنئة عبر واتساب"
-                                            >
-                                                <MessageCircle size={18} />
-                                            </button>
-
-                                            <button className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400">
-                                                <ChevronRight size={16} />
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
+                            ))}
                         </div>
                     )}
 

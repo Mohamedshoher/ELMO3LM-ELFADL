@@ -651,8 +651,7 @@ export default function StudentList({ groupId, customTitle }: StudentListProps) 
                                     <button 
                                         onClick={(e) => { 
                                             e.stopPropagation(); 
-                                            const phone = student.parentPhone.replace(/[^0-9]/g, '');
-                                            window.open(`https://wa.me/2${phone}`, '_blank');
+                                            window.open(getWhatsAppUrl(student.parentPhone), '_blank');
                                         }} 
                                         className="w-8 h-8 flex items-center justify-center text-green-600 hover:bg-white rounded-lg transition-all" 
                                         title="واتساب"

@@ -57,8 +57,24 @@ export function getWhatsAppUrl(phone: string, message?: string) {
     // تنظيف الرقم من أي مسافات أو رموز غير رقمية
     let cleanPhone = phone.replace(/[^0-9]/g, '');
 
-    // إضافة كود الدولة (مصر) إذا كان الرقم يبدأ بـ 01
-    if (cleanPhone.startsWith('01')) {
+    // إزالة 00 في البداية (مفتاح دولي قديم)
+    if (cleanPhone.startsWith('00')) {
+        cleanPhone = cleanPhone.slice(2);
+    }
+
+    // إذا الرقم يبدأ بصفر، نحدد التعامل بناءً على ثاني رقم
+    if (cleanPhone.startsWith('0')) {
+        if (cleanPhone.startsWith('01')) {
+            // رقم محمول مصري بدون مفتاح دولة (01X XXXXXXX)
+            // نضيف مفتاح مصر: 2 + 01... = 201...
+            cleanPhone = '2' + cleanPhone;
+        } else {
+            // رقم بصفر في البداية (مثل 02 للقاهرة أو 0XY)
+            // نزيل الصفر ونضيف مفتاح مصر
+            cleanPhone = '2' + cleanPhone.slice(1);
+        }
+    } else if (!cleanPhone.startsWith('2')) {
+        // الرقم لا يبدأ بصفر ولا بمفتاح مصر - نفترض أنه محمول مصري
         cleanPhone = '2' + cleanPhone;
     }
 
