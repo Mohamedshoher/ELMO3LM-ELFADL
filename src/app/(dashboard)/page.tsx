@@ -169,7 +169,7 @@ export default function DashboardOverview() {
 
         {
             title: 'تحديث الحسابات',
-            value: students.filter(s => (s.parentPhone || '').replace(/[^0-9]/g, '').length >= 11).length.toString(),
+            value: students.filter(s => s.status === 'active' && (s.parentPhone || '').replace(/[^0-9]/g, '').length >= 11).length.toString(),
             icon: RefreshCw,
             color: 'bg-indigo-600',
             roles: ['director'], // متاح فقط للمدير
@@ -204,7 +204,8 @@ export default function DashboardOverview() {
         setIsSyncing(true);
         // محاكاة عملية فحص وتحديث الحسابات
         await new Promise(resolve => setTimeout(resolve, 1500));
-        const invalidCount = students.filter((s: Student) => (s.parentPhone || '').replace(/[^0-9]/g, '').length < 11).length;
+        const activeStudentsOnly = students.filter((s: Student) => s.status === 'active');
+        const invalidCount = activeStudentsOnly.filter((s: Student) => (s.parentPhone || '').replace(/[^0-9]/g, '').length < 11).length;
         if (invalidCount > 0) {
             alert(`تم فحص البيانات. يوجد ${invalidCount} طلاب لديهم أرقام هواتف غير مكتملة (أقل من 11 رقم)، لن يتمكن أولياء أمورهم من الدخول حتى يتم تحديث بياناتهم.`);
         } else {
