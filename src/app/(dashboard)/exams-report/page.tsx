@@ -490,8 +490,8 @@ export default function ExamsReportPage() {
                     {/* --- التبويب 4: مقارنة أداء المجموعات --- */}
                     {activeTab === 'performance' && (
                         <div className="space-y-8 animate-[fadeIn_0.3s_ease-out]">
-                            {/* شريط الفلاتر التفاعلي لتبويب الأداء */}
-                            <div className="flex items-center justify-start md:justify-center gap-1 md:gap-4 py-3 border-y border-gray-100 flex-row-reverse flex-wrap w-full">
+                            {/* شريط الفلاتر التفاعلي لتبويب الأداء - الصف الأول */}
+                            <div className="flex items-center justify-start md:justify-center gap-1 md:gap-4 py-2 border-y border-gray-100 flex-row-reverse flex-wrap md:flex-nowrap w-full">
                                 <button
                                     onClick={() => setPerformanceFilter('all')}
                                     className={cn("flex flex-row-reverse items-center gap-1 md:gap-3 px-2 md:px-4 py-1.5 md:py-2 rounded-xl transition-all", performanceFilter === 'all' ? "bg-blue-600 text-white shadow-md" : "bg-gray-50 text-gray-500 hover:bg-gray-100")}
@@ -508,10 +508,10 @@ export default function ExamsReportPage() {
                                 </button>
                                 <button
                                     onClick={() => setPerformanceFilter('near')}
-                                    className={cn("flex flex-row-reverse items-center gap-1 md:gap-3 px-2 md:px-4 py-1.5 md:py-2 rounded-xl transition-all", performanceFilter === 'near' ? "bg-blue-500 text-white shadow-md" : "bg-gray-50 text-gray-500 hover:bg-gray-100")}
+                                    className={cn("flex flex-row-reverse items-center gap-1 md:gap-3 px-2 md:px-4 py-1.5 md:py-2 rounded-xl transition-all", performanceFilter === 'near' ? "bg-amber-500 text-white shadow-md" : "bg-gray-50 text-gray-500 hover:bg-gray-100")}
                                 >
                                     <span className="text-[9px] md:text-sm font-black">ماضي قريب</span>
-                                    <div className={cn("w-1 h-1 md:w-2 md:h-2 rounded-full", performanceFilter === 'near' ? "bg-white" : "bg-blue-500")} />
+                                    <div className={cn("w-1 h-1 md:w-2 md:h-2 rounded-full", performanceFilter === 'near' ? "bg-white" : "bg-amber-500")} />
                                 </button>
                                 <button
                                     onClick={() => setPerformanceFilter('far')}
@@ -520,11 +520,10 @@ export default function ExamsReportPage() {
                                     <span className="text-[9px] md:text-sm font-black">بعيد</span>
                                     <div className={cn("w-1 h-1 md:w-2 md:h-2 rounded-full", performanceFilter === 'far' ? "bg-white" : "bg-purple-500")} />
                                 </button>
+                            </div>
 
-                                {/* فاصل */}
-                                <div className="w-px h-6 bg-gray-200 mx-1 hidden md:block" />
-
-                                {/* قائمة منسدلة لفلتر نوع المجموعة */}
+                            {/* شريط الفلاتر - الصف الثاني (كل المجموعات) */}
+                            <div className="flex items-center justify-center py-2 border-b border-gray-100 w-full">
                                 <div className="relative">
                                     <select
                                         value={performanceTypeFilter}
@@ -557,14 +556,20 @@ export default function ExamsReportPage() {
                                                             const label = { new: 'جديد', near: 'ماضي قريب', far: 'بعيد' }[type];
                                                             const testedVal = data.tested[type];
                                                             const notTestedVal = data.notTested[type];
+                                                            const barColor = type === 'new' ? 'from-green-400 to-emerald-500'
+                                                                : type === 'near' ? 'from-amber-400 to-orange-500'
+                                                                : 'from-purple-400 to-violet-500';
+                                                            const textColor = type === 'new' ? 'text-emerald-600'
+                                                                : type === 'near' ? 'text-amber-600'
+                                                                : 'text-purple-600';
                                                             return (
                                                                 <div key={type} className="flex items-center gap-2">
                                                                     <span className="text-[11px] font-bold text-gray-400 w-16 shrink-0 text-left">{label}</span>
                                                                     <div className="flex-1 h-4 bg-gray-100 rounded-full overflow-hidden shadow-inner relative">
-                                                                        <div style={{ width: `${(testedVal / Math.max(totalSt, 1)) * 100}%` }} className="absolute right-0 top-0 h-full bg-gradient-to-l from-green-400 to-emerald-500 rounded-full animate-[chartFill_0.7s_ease-out]" />
+                                                                        <div style={{ width: `${(testedVal / Math.max(totalSt, 1)) * 100}%` }} className={`absolute right-0 top-0 h-full bg-gradient-to-l ${barColor} rounded-full animate-[chartFill_0.7s_ease-out]`} />
                                                                     </div>
                                                                     <span className="flex items-center gap-1 text-[11px] font-black text-gray-500 font-sans">
-                                                                        <span className="text-emerald-600">{testedVal}</span>
+                                                                        <span className={textColor}>{testedVal}</span>
                                                                         <span className="text-gray-300">/</span>
                                                                         <span className="text-gray-400">{totalSt}</span>
                                                                     </span>
@@ -578,19 +583,25 @@ export default function ExamsReportPage() {
 
                                         const testedVal = (data.tested as any)[performanceFilter];
                                         const barWidth = `${(testedVal / Math.max(totalSt, 1)) * 100}%`;
+                                        const barColor = performanceFilter === 'new' ? 'from-green-400 to-emerald-500'
+                                            : performanceFilter === 'near' ? 'from-amber-400 to-orange-500'
+                                            : 'from-purple-400 to-violet-500';
+                                        const textColor = performanceFilter === 'new' ? 'text-emerald-600'
+                                            : performanceFilter === 'near' ? 'text-amber-600'
+                                            : 'text-purple-600';
 
                                         return (
                                             <div key={data.id} className="space-y-2">
                                                 <div className="flex flex-row-reverse items-center justify-between px-1">
                                                     <span className="text-sm font-bold text-gray-700">{data.name}</span>
                                                     <span className="text-xs font-black text-gray-400 font-sans">
-                                                        <span className="text-emerald-600">{testedVal}</span>
+                                                        <span className={textColor}>{testedVal}</span>
                                                         <span className="text-gray-300">/</span>
                                                         <span className="text-gray-500">{totalSt} اختبر</span>
                                                     </span>
                                                 </div>
                                                 <div className="h-6 w-full bg-gray-100 rounded-full overflow-hidden shadow-inner relative">
-                                                    <div style={{ width: barWidth }} className="absolute right-0 top-0 h-full bg-gradient-to-l from-green-400 to-emerald-500 rounded-full animate-[chartFill_0.7s_ease-out]" />
+                                                    <div style={{ width: barWidth }} className={`absolute right-0 top-0 h-full bg-gradient-to-l ${barColor} rounded-full animate-[chartFill_0.7s_ease-out]`} />
                                                 </div>
                                             </div>
                                         );
