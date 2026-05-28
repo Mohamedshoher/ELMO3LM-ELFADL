@@ -520,38 +520,24 @@ export default function ExamsReportPage() {
                                     <span className="text-[9px] md:text-sm font-black">بعيد</span>
                                     <div className={cn("w-1 h-1 md:w-2 md:h-2 rounded-full", performanceFilter === 'far' ? "bg-white" : "bg-purple-500")} />
                                 </button>
-                            </div>
 
-                            {/* شريط فلاتر نوع المجموعة (قرآن، تلقين، نور البيان) */}
-                            <div className="flex items-center justify-start md:justify-center gap-1 md:gap-4 flex-row-reverse flex-wrap w-full">
-                                <button
-                                    onClick={() => setPerformanceTypeFilter('all')}
-                                    className={cn("flex flex-row-reverse items-center gap-1 md:gap-3 px-2 md:px-4 py-1.5 md:py-2 rounded-xl transition-all", performanceTypeFilter === 'all' ? "bg-amber-600 text-white shadow-md" : "bg-gray-50 text-gray-500 hover:bg-gray-100")}
-                                >
-                                    <span className="text-[9px] md:text-sm font-black">الكل</span>
-                                    <div className={cn("w-1 h-1 md:w-2 md:h-2 rounded-full", performanceTypeFilter === 'all' ? "bg-white/20" : "bg-amber-600")} />
-                                </button>
-                                <button
-                                    onClick={() => setPerformanceTypeFilter('quran')}
-                                    className={cn("flex flex-row-reverse items-center gap-1 md:gap-3 px-2 md:px-4 py-1.5 md:py-2 rounded-xl transition-all", performanceTypeFilter === 'quran' ? "bg-emerald-600 text-white shadow-md" : "bg-gray-50 text-gray-500 hover:bg-gray-100")}
-                                >
-                                    <span className="text-[9px] md:text-sm font-black">قرآن</span>
-                                    <div className={cn("w-1 h-1 md:w-2 md:h-2 rounded-full", performanceTypeFilter === 'quran' ? "bg-white" : "bg-emerald-600")} />
-                                </button>
-                                <button
-                                    onClick={() => setPerformanceTypeFilter('talqeen')}
-                                    className={cn("flex flex-row-reverse items-center gap-1 md:gap-3 px-2 md:px-4 py-1.5 md:py-2 rounded-xl transition-all", performanceTypeFilter === 'talqeen' ? "bg-sky-600 text-white shadow-md" : "bg-gray-50 text-gray-500 hover:bg-gray-100")}
-                                >
-                                    <span className="text-[9px] md:text-sm font-black">تلقين</span>
-                                    <div className={cn("w-1 h-1 md:w-2 md:h-2 rounded-full", performanceTypeFilter === 'talqeen' ? "bg-white" : "bg-sky-600")} />
-                                </button>
-                                <button
-                                    onClick={() => setPerformanceTypeFilter('noor')}
-                                    className={cn("flex flex-row-reverse items-center gap-1 md:gap-3 px-2 md:px-4 py-1.5 md:py-2 rounded-xl transition-all", performanceTypeFilter === 'noor' ? "bg-violet-600 text-white shadow-md" : "bg-gray-50 text-gray-500 hover:bg-gray-100")}
-                                >
-                                    <span className="text-[9px] md:text-sm font-black">نور البيان</span>
-                                    <div className={cn("w-1 h-1 md:w-2 md:h-2 rounded-full", performanceTypeFilter === 'noor' ? "bg-white" : "bg-violet-600")} />
-                                </button>
+                                {/* فاصل */}
+                                <div className="w-px h-6 bg-gray-200 mx-1 hidden md:block" />
+
+                                {/* قائمة منسدلة لفلتر نوع المجموعة */}
+                                <div className="relative">
+                                    <select
+                                        value={performanceTypeFilter}
+                                        onChange={(e) => setPerformanceTypeFilter(e.target.value as any)}
+                                        className="appearance-none bg-white border border-gray-100 px-5 py-1.5 md:py-2 pr-3 rounded-lg md:rounded-xl text-[9px] md:text-sm font-bold text-gray-600 focus:outline-none text-right cursor-pointer"
+                                    >
+                                        <option value="all">كل المجموعات</option>
+                                        <option value="quran">قرآن</option>
+                                        <option value="talqeen">تلقين</option>
+                                        <option value="noor">نور البيان</option>
+                                    </select>
+                                    <ChevronDown size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                                </div>
                             </div>
 
                             {/* الرسوم البيانية (أشرطة التقدم) */}
