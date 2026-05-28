@@ -17,17 +17,9 @@ const mapTransaction = (row: any): FinancialTransaction => ({
 // الحصول على جميع المعاملات المالية
 export const getTransactions = async (): Promise<FinancialTransaction[]> => {
     try {
-        const { data, error } = await supabase
-            .from('financial_transactions')
-            .select('id, amount, type, category, date, description, related_user_id, performed_by, created_at')
-            .order('created_at', { ascending: false });
-
-        if (error) {
-            console.error("Supabase error fetching transactions:", error);
-            return [];
-        }
-
-        return (data || []).map(mapTransaction);
+        const res = await fetch('/api/finance');
+        if (!res.ok) return [];
+        return await res.json();
     } catch (error) {
         console.error("خطأ في جلب المعاملات:", error);
         return [];
@@ -37,24 +29,9 @@ export const getTransactions = async (): Promise<FinancialTransaction[]> => {
 // الحصول على المعاملات حسب الشهر
 export const getTransactionsByMonth = async (year: number, month: number): Promise<FinancialTransaction[]> => {
     try {
-        // Adjust date filtering logic
-        // Assuming we filter by the 'date' field which is YYYY-MM-DD
-        const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
-        // Calculate end date properly for filtering string dates or timestamp
-        // Let's assume we filter by the 'date' column string range
-        const nextMonth = month === 12 ? 1 : month + 1;
-        const nextYear = month === 12 ? year + 1 : year;
-        const endDate = `${nextYear}-${String(nextMonth).padStart(2, '0')}-01`;
-
-        const { data, error } = await supabase
-            .from('financial_transactions')
-            .select('id, amount, type, category, date, description, related_user_id, performed_by, created_at')
-            .gte('date', startDate)
-            .lt('date', endDate) // Less than first day of next month
-            .order('date', { ascending: false });
-
-        if (error) throw error;
-        return (data || []).map(mapTransaction);
+        const res = await fetch(`/api/finance?year=${year}&month=${month}`);
+        if (!res.ok) return [];
+        return await res.json();
     } catch (error) {
         console.error("خطأ في جلب المعاملات الشهرية:", error);
         return [];
@@ -64,20 +41,9 @@ export const getTransactionsByMonth = async (year: number, month: number): Promi
 // الحصول على الإيرادات حسب الشهر
 export const getIncomeByMonth = async (year: number, month: number): Promise<FinancialTransaction[]> => {
     try {
-        const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
-        const nextMonth = month === 12 ? 1 : month + 1;
-        const nextYear = month === 12 ? year + 1 : year;
-        const endDate = `${nextYear}-${String(nextMonth).padStart(2, '0')}-01`;
-
-        const { data, error } = await supabase
-            .from('financial_transactions')
-            .select('id, amount, type, category, date, description, related_user_id, performed_by, created_at')
-            .eq('type', 'income')
-            .gte('date', startDate)
-            .lt('date', endDate);
-
-        if (error) throw error;
-        return (data || []).map(mapTransaction);
+        const res = await fetch(`/api/finance?year=${year}&month=${month}&type=income`);
+        if (!res.ok) return [];
+        return await res.json();
     } catch (error) {
         console.error("خطأ في جلب الإيرادات:", error);
         return [];
@@ -87,20 +53,9 @@ export const getIncomeByMonth = async (year: number, month: number): Promise<Fin
 // الحصول على المصروفات حسب الشهر
 export const getExpensesByMonth = async (year: number, month: number): Promise<FinancialTransaction[]> => {
     try {
-        const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
-        const nextMonth = month === 12 ? 1 : month + 1;
-        const nextYear = month === 12 ? year + 1 : year;
-        const endDate = `${nextYear}-${String(nextMonth).padStart(2, '0')}-01`;
-
-        const { data, error } = await supabase
-            .from('financial_transactions')
-            .select('id, amount, type, category, date, description, related_user_id, performed_by, created_at')
-            .eq('type', 'expense')
-            .gte('date', startDate)
-            .lt('date', endDate);
-
-        if (error) throw error;
-        return (data || []).map(mapTransaction);
+        const res = await fetch(`/api/finance?year=${year}&month=${month}&type=expense`);
+        if (!res.ok) return [];
+        return await res.json();
     } catch (error) {
         console.error("خطأ في جلب المصروفات:", error);
         return [];
@@ -174,39 +129,9 @@ export const getTeacherSalaryPayments = async (
             console.warn("teacherId is required");
             return [];
         }
-
-        // تحويل teacherId إلى string إذا كان uuid
-        const userIdStr = String(teacherId).trim();
-
-        const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
-        const nextMonth = month === 12 ? 1 : month + 1;
-        const nextYear = month === 12 ? year + 1 : year;
-        const endDate = `${nextYear}-${String(nextMonth).padStart(2, '0')}-01`;
-
-        console.log('Fetching salary payments for:', { userIdStr, startDate, endDate });
-
-        const { data, error } = await supabase
-            .from('financial_transactions')
-            .select('id, amount, type, category, date, description, related_user_id, performed_by, created_at')
-            .eq('type', 'expense')
-            .eq('category', 'salary')
-            .eq('related_user_id', userIdStr)
-            .gte('date', startDate)
-            .lt('date', endDate)
-            .order('date', { ascending: false });
-
-        if (error) {
-            console.error("Supabase error fetching salary payments:", {
-                message: error.message,
-                details: error.details,
-                code: error.code,
-                hint: error.hint
-            });
-            return [];
-        }
-
-        console.log('Salary payments fetched:', data);
-        return (data || []).map(mapTransaction);
+        const res = await fetch(`/api/finance?year=${year}&month=${month}&type=expense&category=salary&teacherId=${encodeURIComponent(teacherId)}`);
+        if (!res.ok) return [];
+        return await res.json();
     } catch (error) {
         console.error("خطأ في جلب سجل الرواتب:", error);
         return [];
@@ -248,22 +173,9 @@ export const getTeacherHandovers = async (teacherId: string, monthKey: string): 
         const [yearStr, monthStr] = monthKey.split('-');
         const year = parseInt(yearStr);
         const month = parseInt(monthStr);
-
-        const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
-        const nextMonth = month === 12 ? 1 : month + 1;
-        const nextYear = month === 12 ? year + 1 : year;
-        const endDate = `${nextYear}-${String(nextMonth).padStart(2, '0')}-01`;
-
-        const { data, error } = await supabase
-            .from('financial_transactions')
-            .select('id, amount, type, category, date, description, related_user_id, performed_by, created_at')
-            .eq('type', 'income')
-            .eq('related_user_id', teacherId)
-            .gte('date', startDate)
-            .lt('date', endDate);
-
-        if (error) throw error;
-        return (data || []).map(mapTransaction);
+        const res = await fetch(`/api/finance?year=${year}&month=${month}&type=income&teacherId=${encodeURIComponent(teacherId)}`);
+        if (!res.ok) return [];
+        return await res.json();
     } catch (error) {
         console.error("خطأ في جلب تسليمات المدرس:", error);
         return [];

@@ -3,43 +3,17 @@ import { supabase } from "@/lib/supabase";
 
 export const getStudents = async (groupIds?: string[]): Promise<Student[]> => {
     try {
-        let query = supabase
-            .from('students')
-            .select('id, full_name, group_id, parent_phone, status, monthly_amount, birth_date, address, appointment, notes, enrollment_date, archived_date, created_at');
-
+        const params = new URLSearchParams();
         if (groupIds && groupIds.length > 0) {
-            query = query.in('group_id', groupIds);
+            params.set('groupIds', groupIds.join(','));
         }
-
-        const { data, error } = await query;
-
-        if (error) {
-            console.error("Supabase error fetching students:", error.message || error);
+        const qs = params.toString();
+        const res = await fetch(`/api/students${qs ? '?' + qs : ''}`);
+        if (!res.ok) {
+            console.error("API error fetching students:", await res.text());
             return [];
         }
-
-        return (data || []).map(row => ({
-            id: row.id,
-            fullName: row.full_name,
-            groupId: row.group_id,
-            parentPhone: row.parent_phone,
-            status: row.status,
-            isArchived: row.status === 'archived',
-            monthlyAmount: Number(row.monthly_amount) || 0,
-            birthDate: row.birth_date,
-            address: row.address,
-            appointment: row.appointment,
-            notes: row.notes,
-            // استخدام enrollment_date المخزن أو استخلاص التاريخ من created_at كخيار احتياطي
-            enrollmentDate: row.enrollment_date || (row.created_at ? row.created_at.split('T')[0] : new Date().toISOString().split('T')[0]),
-            archivedDate: row.archived_date,
-            whatsapp: row.parent_phone,
-            email: '',
-            password: '',
-            role: 'student',
-            attendance: [],
-            exams: []
-        } as unknown as Student));
+        return await res.json();
     } catch (error) {
         console.error("Unexpected error fetching students:", error);
         return [];

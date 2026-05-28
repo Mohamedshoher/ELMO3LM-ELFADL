@@ -4,25 +4,12 @@ import { supabase } from "@/lib/supabase";
 // الحصول على جميع المجموعات
 export const getGroups = async (): Promise<Group[]> => {
     try {
-        const { data, error } = await supabase
-            .from('groups')
-            .select('id, name, teacher_id, schedule, max_students_per_hour')
-            .order('name', { ascending: true });
-
-        if (error) {
-            console.error("Supabase error fetching groups:", error);
+        const res = await fetch('/api/groups');
+        if (!res.ok) {
+            console.error("API error fetching groups:", await res.text());
             return [];
         }
-
-        return (data || []).map(row => ({
-            id: row.id,
-            name: row.name,
-            teacherId: row.teacher_id,
-            schedule: row.schedule || '',
-            maxStudentsPerHour: row.max_students_per_hour || 5, // افتراضي 5 لو مفيش
-            // Add defaults for UI-only fields if they exist in type but not DB
-            students: [],
-        } as unknown as Group));
+        return await res.json();
     } catch (error) {
         console.error("Unexpected error fetching groups:", error);
         return [];
@@ -117,25 +104,12 @@ export const deleteGroup = async (id: string): Promise<void> => {
 // الحصول على المجموعات الخاصة بمعلم معين
 export const getGroupsByTeacherId = async (teacherId: string): Promise<Group[]> => {
     try {
-        const { data, error } = await supabase
-            .from('groups')
-            .select('*')
-            .eq('teacher_id', teacherId)
-            .order('name', { ascending: true });
-
-        if (error) {
-            console.error("Supabase error fetching teacher groups:", error);
+        const res = await fetch(`/api/groups?teacherId=${encodeURIComponent(teacherId)}`);
+        if (!res.ok) {
+            console.error("API error fetching teacher groups:", await res.text());
             return [];
         }
-
-        return (data || []).map(row => ({
-            id: row.id,
-            name: row.name,
-            teacherId: row.teacher_id,
-            schedule: row.schedule || '',
-            maxStudentsPerHour: row.max_students_per_hour || 5,
-            students: [],
-        } as unknown as Group));
+        return await res.json();
     } catch (error) {
         console.error("Error fetching groups by teacher ID: ", error);
         return [];

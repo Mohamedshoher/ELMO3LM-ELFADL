@@ -10,31 +10,12 @@ import { supabase } from "@/lib/supabase";
  */
 export const getTeachers = async (): Promise<Teacher[]> => {
     try {
-        const { data, error } = await supabase
-            .from('teachers')
-            .select('id, full_name, phone, role, accounting_type, salary, partnership_percentage, password, responsible_sections, status, created_at');
-
-        if (error) {
-            console.error("Supabase error fetching teachers:", error);
+        const res = await fetch('/api/teachers');
+        if (!res.ok) {
+            console.error("API error fetching teachers:", await res.text());
             return [];
         }
-
-        // تحويل البيانات القادمة من Supabase إلى شكل الكائن (Object) المتوافق مع واجهة Teacher
-        return (data || []).map(row => ({
-            id: row.id,
-            fullName: row.full_name,
-            phone: row.phone,
-            email: '', // غير موجود في المخطط ولكن النوع (Type) يتطلبه
-            role: row.role || 'teacher',
-            accountingType: row.accounting_type || 'fixed',
-            salary: row.salary || 0,
-            partnershipPercentage: row.partnership_percentage || 0,
-            password: row.password || '',
-            responsibleSections: row.responsible_sections || [],
-            status: row.status,
-            joinDate: row.created_at,
-            assignedGroups: [] // عادة ما يتم جلب المجموعات في طلب منفصل
-        } as Teacher));
+        return await res.json();
     } catch (error) {
         console.error("Unexpected error fetching teachers:", error);
         return [];

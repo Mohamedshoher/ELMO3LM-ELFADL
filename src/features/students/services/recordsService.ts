@@ -240,43 +240,18 @@ export const getStudentExams = async (studentId: string): Promise<ExamRecord[]> 
 
 export const getAllExams = async (monthKey?: string, periodHalf?: 1 | 2, studentIds?: string[]): Promise<ExamRecord[]> => {
     try {
-        let query = supabase.from('exams').select('id, student_id, surah, exam_type, grade, date, created_at');
+        const params = new URLSearchParams();
+        if (monthKey) params.set('monthKey', monthKey);
+        if (periodHalf) params.set('periodHalf', String(periodHalf));
+        if (studentIds && studentIds.length > 0) params.set('studentIds', studentIds.join(','));
 
-        if (monthKey) {
-            // نفترض أن monthKey بصيغة YYYY-MM
-            if (periodHalf === 1) {
-                query = query.gte('date', `${monthKey}-01`).lte('date', `${monthKey}-15`);
-            } else if (periodHalf === 2) {
-                const lastDay = new Date(parseInt(monthKey.split('-')[0]), parseInt(monthKey.split('-')[1]), 0).getDate();
-                query = query.gte('date', `${monthKey}-16`).lte('date', `${monthKey}-${lastDay}`);
-            } else {
-                const lastDay = new Date(parseInt(monthKey.split('-')[0]), parseInt(monthKey.split('-')[1]), 0).getDate();
-                query = query.gte('date', `${monthKey}-01`).lte('date', `${monthKey}-${lastDay}`);
-            }
-        }
-
-        if (studentIds && studentIds.length > 0) {
-            query = query.in('student_id', studentIds);
-        }
-
-        query = query.limit(10000); // 10000 is usually enough for a month's exams
-
-        const { data, error } = await query;
-        if (error) {
-            console.error("Supabase error fetching all exams:", error);
+        const qs = params.toString();
+        const res = await fetch(`/api/exams${qs ? '?' + qs : ''}`);
+        if (!res.ok) {
+            console.error("API error fetching exams:", await res.text());
             return [];
         }
-
-        return (data || []).map(row => ({
-            id: row.id,
-            studentId: row.student_id,
-            surah: row.surah,
-            type: row.exam_type,
-            grade: row.grade,
-            date: row.date,
-            notes: '',
-            timestamp: new Date(row.created_at).getTime()
-        }));
+        return await res.json();
     } catch (error) {
         console.error("Error fetching all exams:", error);
         return [];
