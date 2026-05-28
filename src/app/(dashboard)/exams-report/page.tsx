@@ -490,8 +490,8 @@ export default function ExamsReportPage() {
                     {/* --- التبويب 4: مقارنة أداء المجموعات --- */}
                     {activeTab === 'performance' && (
                         <div className="space-y-8 animate-[fadeIn_0.3s_ease-out]">
-                            {/* شريط الفلاتر التفاعلي لتبويب الأداء - الصف الأول */}
-                            <div className="flex items-center justify-start md:justify-center gap-1 md:gap-4 py-2 border-y border-gray-100 flex-row-reverse flex-wrap md:flex-nowrap w-full">
+                            {/* شريط الفلاتر التفاعلي لتبويب الأداء - سطر واحد */}
+                            <div className="flex items-center justify-start md:justify-center gap-1 md:gap-4 py-3 border-y border-gray-100 flex-row-reverse flex-wrap w-full">
                                 <button
                                     onClick={() => setPerformanceFilter('all')}
                                     className={cn("flex flex-row-reverse items-center gap-1 md:gap-3 px-2 md:px-4 py-1.5 md:py-2 rounded-xl transition-all", performanceFilter === 'all' ? "bg-blue-600 text-white shadow-md" : "bg-gray-50 text-gray-500 hover:bg-gray-100")}
@@ -520,15 +520,12 @@ export default function ExamsReportPage() {
                                     <span className="text-[9px] md:text-sm font-black">بعيد</span>
                                     <div className={cn("w-1 h-1 md:w-2 md:h-2 rounded-full", performanceFilter === 'far' ? "bg-white" : "bg-purple-500")} />
                                 </button>
-                            </div>
 
-                            {/* شريط الفلاتر - الصف الثاني (كل المجموعات) */}
-                            <div className="flex items-center justify-center py-2 border-b border-gray-100 w-full">
                                 <div className="relative">
                                     <select
                                         value={performanceTypeFilter}
                                         onChange={(e) => setPerformanceTypeFilter(e.target.value as any)}
-                                        className="appearance-none bg-white border border-gray-100 px-5 py-1.5 md:py-2 pr-3 rounded-lg md:rounded-xl text-[9px] md:text-sm font-bold text-gray-600 focus:outline-none text-right cursor-pointer"
+                                        className="appearance-none bg-white border border-gray-100 px-3 md:px-5 py-1.5 md:py-2 pr-2 md:pr-3 rounded-lg md:rounded-xl text-[9px] md:text-sm font-bold text-gray-600 focus:outline-none text-right cursor-pointer"
                                     >
                                         <option value="all">كل المجموعات</option>
                                         <option value="quran">قرآن</option>
