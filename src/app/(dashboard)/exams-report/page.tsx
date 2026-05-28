@@ -66,6 +66,7 @@ export default function ExamsReportPage() {
     const [selectedExamType, setSelectedExamType] = useState('new'); // نوع الاختبار (جديد، قريب، بعيد)
     const [examsLimit, setExamsLimit] = useState('1'); // الحد الأدنى للاختبارات (لتبويب الأكثر اختباراً)
     const [performanceFilter, setPerformanceFilter] = useState<'all' | 'new' | 'near' | 'far'>('all'); // فلتر تبويب الأداء
+    const [performanceTypeFilter, setPerformanceTypeFilter] = useState<'all' | 'quran' | 'talqeen' | 'noor'>('all'); // فلتر نوع المجموعة
 
     const [selectedRemainingCount, setSelectedRemainingCount] = useState('all'); // فلتر عدد الاختبارات المتبقية (3، 2، 1)
 
@@ -210,6 +211,17 @@ export default function ExamsReportPage() {
             baseGroups = baseGroups.filter((g: any) => assignedGroupIds.includes(g.id));
         }
 
+        // تصفية حسب نوع المجموعة (قرآن، تلقين، نور البيان)
+        if (performanceTypeFilter !== 'all') {
+            baseGroups = baseGroups.filter((g: any) => {
+                const name = g.name || '';
+                if (performanceTypeFilter === 'quran') return name.includes('قرآن');
+                if (performanceTypeFilter === 'talqeen') return name.includes('تلقين');
+                if (performanceTypeFilter === 'noor') return name.includes('نور بيان') || name.includes('نور البيان');
+                return true;
+            });
+        }
+
                 return baseGroups.map((g: any) => {
                     const groupStudents = (students || []).filter((s: any) => s.groupId === g.id && s.status === 'active');
                     const groupStudentIds = new Set(groupStudents.map((s: any) => s.id));
@@ -245,7 +257,7 @@ export default function ExamsReportPage() {
                         }
                     };
                 });
-    }, [groups, students, allExams, user, assignedGroupIds]);
+    }, [groups, students, allExams, user, assignedGroupIds, performanceTypeFilter]);
 
     return (
         <div className="min-h-screen bg-gray-50/50 pb-24 text-right font-sans overflow-x-hidden" dir="rtl">
@@ -507,6 +519,38 @@ export default function ExamsReportPage() {
                                 >
                                     <span className="text-[9px] md:text-sm font-black">بعيد</span>
                                     <div className={cn("w-1 h-1 md:w-2 md:h-2 rounded-full", performanceFilter === 'far' ? "bg-white" : "bg-purple-500")} />
+                                </button>
+                            </div>
+
+                            {/* شريط فلاتر نوع المجموعة (قرآن، تلقين، نور البيان) */}
+                            <div className="flex items-center justify-start md:justify-center gap-1 md:gap-4 flex-row-reverse flex-wrap w-full">
+                                <button
+                                    onClick={() => setPerformanceTypeFilter('all')}
+                                    className={cn("flex flex-row-reverse items-center gap-1 md:gap-3 px-2 md:px-4 py-1.5 md:py-2 rounded-xl transition-all", performanceTypeFilter === 'all' ? "bg-amber-600 text-white shadow-md" : "bg-gray-50 text-gray-500 hover:bg-gray-100")}
+                                >
+                                    <span className="text-[9px] md:text-sm font-black">الكل</span>
+                                    <div className={cn("w-1 h-1 md:w-2 md:h-2 rounded-full", performanceTypeFilter === 'all' ? "bg-white/20" : "bg-amber-600")} />
+                                </button>
+                                <button
+                                    onClick={() => setPerformanceTypeFilter('quran')}
+                                    className={cn("flex flex-row-reverse items-center gap-1 md:gap-3 px-2 md:px-4 py-1.5 md:py-2 rounded-xl transition-all", performanceTypeFilter === 'quran' ? "bg-emerald-600 text-white shadow-md" : "bg-gray-50 text-gray-500 hover:bg-gray-100")}
+                                >
+                                    <span className="text-[9px] md:text-sm font-black">قرآن</span>
+                                    <div className={cn("w-1 h-1 md:w-2 md:h-2 rounded-full", performanceTypeFilter === 'quran' ? "bg-white" : "bg-emerald-600")} />
+                                </button>
+                                <button
+                                    onClick={() => setPerformanceTypeFilter('talqeen')}
+                                    className={cn("flex flex-row-reverse items-center gap-1 md:gap-3 px-2 md:px-4 py-1.5 md:py-2 rounded-xl transition-all", performanceTypeFilter === 'talqeen' ? "bg-sky-600 text-white shadow-md" : "bg-gray-50 text-gray-500 hover:bg-gray-100")}
+                                >
+                                    <span className="text-[9px] md:text-sm font-black">تلقين</span>
+                                    <div className={cn("w-1 h-1 md:w-2 md:h-2 rounded-full", performanceTypeFilter === 'talqeen' ? "bg-white" : "bg-sky-600")} />
+                                </button>
+                                <button
+                                    onClick={() => setPerformanceTypeFilter('noor')}
+                                    className={cn("flex flex-row-reverse items-center gap-1 md:gap-3 px-2 md:px-4 py-1.5 md:py-2 rounded-xl transition-all", performanceTypeFilter === 'noor' ? "bg-violet-600 text-white shadow-md" : "bg-gray-50 text-gray-500 hover:bg-gray-100")}
+                                >
+                                    <span className="text-[9px] md:text-sm font-black">نور البيان</span>
+                                    <div className={cn("w-1 h-1 md:w-2 md:h-2 rounded-full", performanceTypeFilter === 'noor' ? "bg-white" : "bg-violet-600")} />
                                 </button>
                             </div>
 

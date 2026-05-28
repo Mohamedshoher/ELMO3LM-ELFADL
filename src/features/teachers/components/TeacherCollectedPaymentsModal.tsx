@@ -34,8 +34,9 @@ export const TeacherCollectedPaymentsModal = ({
                 <div onClick={onClose} className="absolute inset-0 bg-black/20 backdrop-blur-[2px]" />
             </FadeIn>
             <SlideIn show={isOpen}
-                className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[95%] max-w-3xl bg-white rounded-[40px] shadow-2xl border border-gray-100 p-6 z-[251] h-[80vh] flex flex-col"
+                className="fixed inset-0 z-[251] flex items-center justify-center p-4"
             >
+                <div className="w-[95%] max-w-3xl bg-white rounded-[40px] shadow-2xl border border-gray-100 p-6 h-[80vh] flex flex-col">
                         <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-50">
                             <div className="flex items-center gap-3">
                                 <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center", colorClasses.bg, colorClasses.text)}>
@@ -94,6 +95,7 @@ export const TeacherCollectedPaymentsModal = ({
                                 )}
                             </div>
                         </div>
+                </div>
             </SlideIn>
         </>
     );

@@ -226,13 +226,6 @@ export default function GroupsPage() {
                                 >
                                     <Plus size={22} />
                                 </button>
-                                <button
-                                    onClick={() => setIsManageModalOpen(true)}
-                                    className="w-11 h-11 bg-white text-purple-600 border border-purple-100 rounded-[16px] flex items-center justify-center hover:bg-purple-50 transition-all shadow-sm active:scale-95"
-                                    title="إدارة المجموعات (تعديل كامل)"
-                                >
-                                    <Settings2 size={20} />
-                                </button>
                             </div>
                         )}
                     </div>
