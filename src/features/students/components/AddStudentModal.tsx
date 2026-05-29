@@ -84,11 +84,11 @@ export default function AddStudentModal({ isOpen, onClose, defaultGroupId }: Add
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        const data = { ...formData };
+        const data: any = { ...formData };
         if (selectedGroup?.courseId) {
             data.courseRegisteredAt = new Date().toISOString();
         }
-        mutation.mutate(data as any);
+        mutation.mutate(data);
     };
 
     return (

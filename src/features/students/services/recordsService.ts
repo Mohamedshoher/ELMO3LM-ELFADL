@@ -21,6 +21,11 @@ export interface ExamRecord {
     notes?: string;
     recordedBy?: string;
     timestamp?: number;
+    courseId?: string;
+    lecturesTested?: number;
+    examLocation?: string; // 'حضوري' | 'أون لاين'
+    amount?: number;
+    lessonTitle?: string;
 }
 
 export interface FeeRecord {
@@ -189,7 +194,13 @@ export const addExamRecord = async (record: Omit<ExamRecord, 'id'>): Promise<Exa
                 surah: record.surah,
                 exam_type: record.type,
                 grade: record.grade,
-                date: record.date
+                date: record.date,
+                course_id: record.courseId || null,
+                lectures_tested: record.lecturesTested || 0,
+                exam_location: record.examLocation || null,
+                amount: record.amount || 0,
+                lesson_title: record.lessonTitle || null,
+                recorded_by: record.recordedBy || null
             }])
             .select('id, created_at')
             .single();

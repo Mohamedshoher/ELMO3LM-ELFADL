@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { X, Calendar, CreditCard, BookOpen, FileText, Clock } from 'lucide-react';
+import { X, Calendar, CreditCard, BookOpen, FileText, Clock, Award } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import { useStudents } from '../hooks/useStudents';
 import { useStudentRecords } from '../hooks/useStudentRecords';
@@ -15,6 +15,7 @@ import FeesTab from './FeesTab';
 import ExamsTab from './ExamsTab';
 
 const ScheduleTab = dynamic(() => import('./ScheduleTab'), { ssr: false });
+const CoursesTab = dynamic(() => import('./CoursesTab'), { ssr: false });
 import NotesTab from './NotesTab';
 import { useGroups } from '@/features/groups/hooks/useGroups';
 import { FadeIn, SlideIn } from '@/components/ui/transition';
@@ -73,6 +74,7 @@ export default function StudentDetailModal({
         { id: 'fees', label: 'سجل المصروفات', icon: CreditCard },
         { id: 'exams', label: 'سجل الاختبارات', icon: BookOpen },
         { id: 'notes', label: 'سجل الملحوظات', icon: FileText },
+        { id: 'courses', label: 'الدورات', icon: Award },
     ];
 
     return (
@@ -112,6 +114,7 @@ export default function StudentDetailModal({
                     {activeTab === 'fees' && <FeesTab student={student} records={studentRecords} />}
                     {activeTab === 'exams' && <ExamsTab student={student} records={studentRecords} />}
                     {activeTab === 'notes' && <NotesTab student={student} records={studentRecords} />}
+                    {activeTab === 'courses' && <CoursesTab student={student} />}
                 </div>
             </SlideIn>
         </>

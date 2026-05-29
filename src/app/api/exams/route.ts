@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
         const studentIds = searchParams.get('studentIds');
 
         const supabase = createServerSupabase();
-        let query = supabase.from('exams').select('id, student_id, surah, exam_type, grade, date, created_at');
+        let query = supabase.from('exams').select('id, student_id, surah, exam_type, grade, date, created_at, course_id, lectures_tested, exam_location, amount, lesson_title, recorded_by');
 
         if (monthKey) {
             if (periodHalf === '1') {
@@ -45,7 +45,13 @@ export async function GET(request: NextRequest) {
             grade: row.grade,
             date: row.date,
             notes: '',
-            timestamp: new Date(row.created_at).getTime()
+            timestamp: new Date(row.created_at).getTime(),
+            courseId: row.course_id,
+            lecturesTested: row.lectures_tested,
+            examLocation: row.exam_location,
+            amount: row.amount,
+            lessonTitle: row.lesson_title,
+            recordedBy: row.recorded_by
         }));
 
         return NextResponse.json(exams);

@@ -31,6 +31,8 @@ export interface Student {
   notes?: string;
   archivedDate?: string; // تاريخ الأرشفة ISO Date YYYY-MM-DD
   courseRegisteredAt?: string; // تاريخ التسجيل في الدورة
+  courseCompletedAt?: string; // تاريخ إتمام الدورة
+  courseFinalGrade?: string; // التقدير النهائي للدورة
 }
 
 export interface Teacher {
