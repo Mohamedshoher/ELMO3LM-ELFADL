@@ -6,9 +6,10 @@ import { useDeleteCourse } from '../hooks/useCourses';
 
 interface CourseCardProps {
     course: Course;
+    onClick?: () => void;
 }
 
-export default function CourseCard({ course }: CourseCardProps) {
+export default function CourseCard({ course, onClick }: CourseCardProps) {
     const deleteMutation = useDeleteCourse();
 
     const handleDelete = () => {
@@ -34,7 +35,7 @@ export default function CourseCard({ course }: CourseCardProps) {
             : 'bg-gray-50 text-gray-600 border-gray-100';
 
     return (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all group">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all group cursor-pointer" onClick={onClick}>
             <div className="p-5">
                 <div className="flex items-start justify-between mb-4">
                     <div className="w-12 h-12 bg-purple-50 rounded-2xl flex items-center justify-center shrink-0">

@@ -4,12 +4,15 @@ import { useState } from 'react';
 import { useCourses } from '@/features/courses/hooks/useCourses';
 import CourseCard from '@/features/courses/components/CourseCard';
 import AddCourseModal from '@/features/courses/components/AddCourseModal';
+import CourseDetailModal from '@/features/courses/components/CourseDetailModal';
 import { BookOpen, Plus, Loader2 } from 'lucide-react';
 import { FadeIn } from '@/components/ui/transition';
+import { Course } from '@/types';
 
 export default function CoursesPage() {
     const { data: courses, isLoading } = useCourses();
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
 
     return (
         <div className="w-full">
@@ -55,7 +58,7 @@ export default function CoursesPage() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                         {courses.map((course) => (
                             <FadeIn key={course.id} show={true}>
-                                <CourseCard course={course} />
+                                <CourseCard course={course} onClick={() => setSelectedCourse(course)} />
                             </FadeIn>
                         ))}
                     </div>
@@ -63,6 +66,13 @@ export default function CoursesPage() {
             </div>
 
             <AddCourseModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} />
+            {selectedCourse && (
+                <CourseDetailModal
+                    course={selectedCourse}
+                    isOpen={true}
+                    onClose={() => setSelectedCourse(null)}
+                />
+            )}
         </div>
     );
 }
