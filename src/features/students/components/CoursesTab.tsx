@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BookOpen, ExternalLink, CheckCircle, Clock, Award, BarChart3 } from 'lucide-react';
+import { BookOpen, ExternalLink, CheckCircle, Clock, Award, BarChart3, Book } from 'lucide-react';
 import { useGroups } from '@/features/groups/hooks/useGroups';
 import { useCourses } from '@/features/courses/hooks/useCourses';
 import { updateStudent } from '../services/studentService';
@@ -84,6 +84,17 @@ export default function CoursesTab({ student }: { student: any }) {
                                 >
                                     <ExternalLink size={14} />
                                     فتح الرابط
+                                </a>
+                            )}
+                            {course.bookLink && (
+                                <a
+                                    href={course.bookLink}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="px-3 py-1 rounded-xl text-xs font-bold bg-amber-50 text-amber-600 border border-amber-100 flex items-center gap-1.5 hover:brightness-95 transition-colors"
+                                >
+                                    <Book size={14} />
+                                    الكتاب
                                 </a>
                             )}
                         </div>
