@@ -11,26 +11,26 @@ const cairo = Cairo({
 });
 
 export const metadata: Metadata = {
-  title: "مركز الشاطبي",
-  description: "نظام إدارة متكامل لمراكز تحفيظ القرآن والمؤسسات التعليمية",
+  title: "المعلم الفاضل",
+  description: "نظام إدارة متكامل للحلقات القرآنية والمؤسسات التعليمية",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "مركز الشاطبي",
+    title: "المعلم الفاضل",
   },
   formatDetection: {
     telephone: false,
   },
   openGraph: {
     type: "website",
-    siteName: "مركز الشاطبي التعليمي",
-    title: "مركز الشاطبي - نظام إدارة تعليمي",
-    description: "نظام إدارة متكامل لمراكز تحفيظ القرآن",
+    siteName: "المعلم الفاضل التعليمي",
+    title: "المعلم الفاضل - نظام إدارة تعليمي",
+    description: "نظام إدارة متكامل للحلقات القرآنية",
   },
   twitter: {
     card: "summary",
-    title: "مركز الشاطبي",
+    title: "المعلم الفاضل",
     description: "نظام إدارة الحلقات القرآنية",
   },
 };

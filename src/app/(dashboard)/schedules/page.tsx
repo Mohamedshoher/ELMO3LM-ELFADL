@@ -1,7 +1,7 @@
 import SchedulesDashboard from '@/features/schedules/components/SchedulesDashboard';
 
 export const metadata = {
-    title: 'تحليل المواعيد - مركز الشاطبي',
+    title: 'تحليل المواعيد - المعلم الفاضل',
     description: 'تحليل وضبط المواعيد الساعات لمختلف المجموعات',
 };
 

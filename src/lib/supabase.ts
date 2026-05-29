@@ -22,7 +22,7 @@ export const supabase = createClient(
         },
         global: {
             headers: {
-                'x-client-info': 'shatbi-lms-v2',
+                'x-client-info': 'almoalem-lms',
             },
         },
     }

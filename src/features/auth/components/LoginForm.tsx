@@ -40,11 +40,11 @@ export default function LoginForm() {
      * استرجاع بيانات الدخول المحفوظة سابقاً من الذاكرة المحلية (LocalStorage)
      */
     useEffect(() => {
-        const savedMainTab = localStorage.getItem('shatibi_last_main_tab') as MainTab | null;
-        const savedRoleTab = localStorage.getItem('shatibi_last_role_tab') as RoleTab | null;
-        const savedTeacherId = localStorage.getItem('shatibi_last_teacher_id');
-        const savedPhone = localStorage.getItem('shatibi_parent_phone');
-        const savedPass = localStorage.getItem('shatibi_last_pass');
+        const savedMainTab = localStorage.getItem('almoalem_last_main_tab') as MainTab | null;
+        const savedRoleTab = localStorage.getItem('almoalem_last_role_tab') as RoleTab | null;
+        const savedTeacherId = localStorage.getItem('almoalem_last_teacher_id');
+        const savedPhone = localStorage.getItem('almoalem_parent_phone');
+        const savedPass = localStorage.getItem('almoalem_last_pass');
 
         if (savedMainTab) setMainTab(savedMainTab);
         if (savedRoleTab) setRoleTab(savedRoleTab);
@@ -63,18 +63,18 @@ export default function LoginForm() {
         let loginIdentifier: string = roleTab;
 
         // حفظ التفضيلات وكلمة المرور في الذاكرة المحلية
-        localStorage.setItem('shatibi_last_main_tab', mainTab);
-        localStorage.setItem('shatibi_last_pass', password);
+        localStorage.setItem('almoalem_last_main_tab', mainTab);
+        localStorage.setItem('almoalem_last_pass', password);
 
         if (mainTab === 'parent') {
             loginIdentifier = `parent-${phone}`;
-            localStorage.setItem('shatibi_parent_phone', phone);
+            localStorage.setItem('almoalem_parent_phone', phone);
         } else {
-            localStorage.setItem('shatibi_last_role_tab', roleTab);
+            localStorage.setItem('almoalem_last_role_tab', roleTab);
             if (roleTab === 'teacher' || roleTab === 'supervisor') {
                 if (!selectedTeacherId) return;
                 loginIdentifier = `${roleTab}-${selectedTeacherId}`;
-                localStorage.setItem('shatibi_last_teacher_id', selectedTeacherId);
+                localStorage.setItem('almoalem_last_teacher_id', selectedTeacherId);
             }
         }
 
@@ -89,7 +89,7 @@ export default function LoginForm() {
     // 1. رأس الصفحة (الشعار والعنوان)
     const renderHeader = () => (
         <div className="text-center mb-6 md:mb-10">
-            <h1 className="text-3xl md:text-5xl font-bold text-white mb-2 tracking-tight">مركز الشاطبي</h1>
+            <h1 className="text-3xl md:text-5xl font-bold text-white mb-2 tracking-tight">المعلم الفاضل</h1>
             <p className="text-blue-200/60 text-base md:text-lg">للقرآن وعلومه</p>
         </div>
     );

@@ -467,7 +467,7 @@ export default function ExamsReportPage() {
                                                 const cleanPhone = phone.replace(/[^0-9]/g, '');
                                                 const last6Digits = cleanPhone.slice(-6);
                                                 
-                                                const message = `السلام عليكم ورحمة الله وبركاته 🌹\nنزف إليكم سعادة وفرحاً بتفوق الطالب/ة: *${student.fullName}*\nلقد أتم اختباراته بنجاح لهذا الشهر (${currentMonthLabel}) 🌟\n\nما تم اختباره:\n${student.examsList}\n\nنتمنى له/لها دوام التوفيق والنجاح.\n\nيمكنكم متابعة النتائج والتسجيل في الحلقات عبر رابط موقعنا:\n🔗 https://shatpycenter-um2b.vercel.app/\n\n🔐 بيانات الدخول:\nاسم المستخدم: *رقم الهاتف المسجل*\nالباسورد: *آخر 6 أرقام (${last6Digits})*\n\nمع تحيات إدارة مركز الشاطبي 🏛️`;
+                                                const message = `السلام عليكم ورحمة الله وبركاته 🌹\nنزف إليكم سعادة وفرحاً بتفوق الطالب/ة: *${student.fullName}*\nلقد أتم اختباراته بنجاح لهذا الشهر (${currentMonthLabel}) 🌟\n\nما تم اختباره:\n${student.examsList}\n\nنتمنى له/لها دوام التوفيق والنجاح.\n\nيمكنكم متابعة النتائج والتسجيل في الحلقات عبر رابط موقعنا:\n🔗 https://shatpycenter-um2b.vercel.app/\n\n🔐 بيانات الدخول:\nاسم المستخدم: *رقم الهاتف المسجل*\nالباسورد: *آخر 6 أرقام (${last6Digits})*\n\nمع تحيات إدارة المعلم الفاضل 🏛️`;
                                                 window.open(getWhatsAppUrl(phone, message), '_blank');
                                             }}
                                             className="w-7 h-7 md:w-9 md:h-9 bg-green-50 text-green-600 rounded-[10px] md:rounded-xl flex items-center justify-center hover:bg-green-600 hover:text-white transition-all shadow-sm border border-green-100"

@@ -107,7 +107,7 @@ export const loginWithRole = async (identifier: string, password: string): Promi
     // --- 5. إرجاع كائن المستخدم النهائي ---
     return {
         uid: `mock-${teacherId || identifier}`,
-        email: `${identifier}@shatibi.center`,
+        email: `${identifier}@almoalem.center`,
         displayName,
         role,
         teacherId,
@@ -131,7 +131,7 @@ export const registerRoleAccount = async (role: string, password: string, displa
     await delay(500);
     return {
         uid: `mock-${role}`,
-        email: `${role}@shatibi.center`,
+        email: `${role}@almoalem.center`,
         displayName,
         role: role as UserRole,
         createdAt: Date.now(),
@@ -146,7 +146,7 @@ export const getUserProfile = async (uid: string): Promise<User | null> => {
     const role = uid.replace('mock-', '');
     return {
         uid: uid,
-        email: `${role}@shatibi.center`,
+        email: `${role}@almoalem.center`,
         displayName: role === 'director' ? 'المدير العام' : role === 'teacher' ? 'معلم' : 'مستخدم',
         role: role as UserRole,
         createdAt: Date.now(),

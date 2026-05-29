@@ -447,7 +447,7 @@ export default function TeacherDetailModal({
 تم صرفه: ${totalPaid} ج.م
 المتبقي للصرف: ${remainingToPay} ج.م
 ---------------------------
-مركز الشاطبي
+المعلم الفاضل
         `.trim();
 
         const whatsappUrl = getWhatsAppUrl(teacher.phone, report);

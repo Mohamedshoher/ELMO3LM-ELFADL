@@ -153,7 +153,7 @@ export default function Sidebar() {
                             <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm p-1.5 border border-gray-50">
                                 <img src="/icon-192.png" alt="Logo" className="w-full h-full object-contain" />
                             </div>
-                            <span className="text-lg font-black text-gray-900 tracking-tighter">مركز الشاطبي</span>
+                            <span className="text-lg font-black text-gray-900 tracking-tighter">المعلم الفاضل</span>
                         </div>
                         <button
                             onClick={() => setSidebarOpen(false)}

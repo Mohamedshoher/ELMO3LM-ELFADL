@@ -152,7 +152,7 @@ export default function AutomationPage() {
                         <Home className="w-5 h-5" />
                     </Link>
                     <div className="flex flex-col">
-                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">مركز الشاطبي</span>
+                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">المعلم الفاضل</span>
                         <h2 className="text-sm font-black text-gray-900 leading-none">نظام الأتمتة</h2>
                     </div>
                 </div>

@@ -26,7 +26,7 @@ export default function BottomNavigation() {
     }
 
     const navItems = [
-        { id: 'home', label: 'مركز الشاطبي', icon: Zap, href: '/' },
+        { id: 'home', label: 'المعلم الفاضل', icon: Zap, href: '/' },
         { id: 'students', label: 'الطلاب', icon: Users, href: '/students' },
         { id: 'attendance', label: 'الحضور', icon: CalendarCheck, href: '/attendance-report' },
         { id: 'groups', label: 'المجموعات', icon: LayoutGrid, href: '/groups' },

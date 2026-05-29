@@ -353,7 +353,7 @@ export const ParentStudentDetailModal: React.FC<ParentStudentDetailModalProps> =
                         </div>
 
                         <div className="p-6 bg-white border-t border-gray-100 shrink-0 text-center">
-                            <p className="text-[10px] text-gray-300 font-bold uppercase tracking-widest">نظام إدارة مركز الشاطبي التعليمي • 2026</p>
+                            <p className="text-[10px] text-gray-300 font-bold uppercase tracking-widest">نظام إدارة المعلم الفاضل التعليمي • 2026</p>
                         </div>
                     </div>
                 </div>

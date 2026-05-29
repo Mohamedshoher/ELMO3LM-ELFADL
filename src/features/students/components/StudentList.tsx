@@ -301,7 +301,7 @@ export default function StudentList({ groupId, customTitle }: StudentListProps) 
         const phone = student.parentPhone || student.studentPhone || '';
         const password = phone.length >= 6 ? phone.slice(-6) : phone;
         const message = `السلام عليكم ورحمة الله وبركاته، 🌸
-أهلاً بكم في مركز الشاطبي لتحفيظ القرآن الكريم! 📖
+أهلاً بكم في المعلم الفاضل لتحفيظ القرآن الكريم! 📖
 
 يسعدنا انضمام الطالب/ة: *${student.fullName}* إلينا. 🎉
 

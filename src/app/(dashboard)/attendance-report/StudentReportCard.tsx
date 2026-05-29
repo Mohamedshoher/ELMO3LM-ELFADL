@@ -73,7 +73,7 @@ export default function StudentReportCard({ student, index, userRole, onArchive,
 (المستخدم: ${phone} 
 / المرور: ${password})
 
-إدارة مركز الشاطبي للقرآن وعلومه 🌷`;
+إدارة المعلم الفاضل للقرآن وعلومه 🌷`;
                             window.open(getWhatsAppUrl(phone, message), '_blank');
                         }} className="w-8 h-8 flex items-center justify-center text-green-600 hover:bg-white rounded-xl transition-all shadow-sm border border-green-50" title="تواصل واتساب">
                             <MessageCircle size={16} />

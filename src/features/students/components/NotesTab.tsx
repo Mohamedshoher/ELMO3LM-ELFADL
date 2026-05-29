@@ -44,7 +44,7 @@ export default function NotesTab({ student, records }: any) {
                                     <button
                                         onClick={() => {
                                             const content = note.text || note.content;
-                                            const text = `السلام عليكم ورحمة الله وبركاته\n\nنود إحاطتكم علماً بملحوظة بخصوص الطالب/ة *${student.fullName}*:\n\n"${content}"\n\nمع تحيات إدارة مركز الشاطبي 🌹`;
+                                            const text = `السلام عليكم ورحمة الله وبركاته\n\nنود إحاطتكم علماً بملحوظة بخصوص الطالب/ة *${student.fullName}*:\n\n"${content}"\n\nمع تحيات إدارة المعلم الفاضل 🌹`;
                                             window.open(getWhatsAppUrl(student.parentPhone || '', text), '_blank');
                                         }}
                                         className="w-8 h-8 flex items-center justify-center text-green-600 hover:bg-green-50 rounded-lg transition-colors"

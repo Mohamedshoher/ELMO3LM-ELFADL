@@ -1,7 +1,7 @@
 {
-    "name": "مركز الشاطبي",
-    "short_name": "مركز الشاطبي",
-    "description": "نظام إدارة متكامل لمراكز تحفيظ القرآن والمؤسسات التعليمية",
+    "name": "المعلم الفاضل",
+    "short_name": "المعلم الفاضل",
+    "description": "نظام إدارة متكامل للحلقات القرآنية والمؤسسات التعليمية",
     "start_url": "/login",
     "display": "standalone",
     "background_color": "#ffffff",

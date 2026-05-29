@@ -128,7 +128,7 @@ export default function StudentNotesModal({
                                                     {note.parentPhone && (
                                                         <button
                                                             onClick={() => {
-                                                                const text = `السلام عليكم ورحمة الله وبركاته\n\nنود إحاطتكم علماً بملحوظة بخصوص الطالب/ة *${note.studentName}*:\n\n"${note.content}"\n\nمع تحيات إدارة مركز الشاطبي 🌹`;
+                                                                const text = `السلام عليكم ورحمة الله وبركاته\n\nنود إحاطتكم علماً بملحوظة بخصوص الطالب/ة *${note.studentName}*:\n\n"${note.content}"\n\nمع تحيات إدارة المعلم الفاضل 🌹`;
                                                                 window.open(getWhatsAppUrl(note.parentPhone || '', text), '_blank');
                                                             }}
                                                             className="w-9 h-9 flex items-center justify-center text-green-600 hover:text-green-700 hover:bg-white rounded-xl transition-all shadow-sm shadow-transparent hover:shadow-green-500/10"
