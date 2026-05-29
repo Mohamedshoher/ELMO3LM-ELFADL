@@ -275,7 +275,12 @@ export default function FinancePage() {
             deductionMap.set(t.id, Math.round((manual + absence) * daily));
         });
 
-        const activeTeachers = teachers.filter(t => t.status !== 'inactive');
+        const activeTeachers = teachers.filter(t => {
+            if (t.status === 'inactive') return false;
+            const joinDate = (t as any).joinDate;
+            if (joinDate) return joinDate.substring(0, 7) <= selectedMonth;
+            return true;
+        });
         const allWithStatus = activeTeachers.map(t => {
             const paidAmount = paidMap.get(t.id) || 0;
             const entitlement = Number(t.salary) || 0;
