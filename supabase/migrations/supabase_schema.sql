@@ -43,7 +43,8 @@ create table groups (
   id uuid default gen_random_uuid() primary key,
   name text not null,                             
   teacher_id uuid references teachers(id),        
-  schedule text,                                  
+  schedule text,
+  max_students_per_hour integer default 5,        
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
