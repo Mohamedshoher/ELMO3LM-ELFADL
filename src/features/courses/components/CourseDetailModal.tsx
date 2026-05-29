@@ -122,7 +122,7 @@ export default function CourseDetailModal({ course, isOpen, onClose }: Props) {
                                                 </div>
                                                 <div>
                                                     <p className="text-sm font-black text-gray-900">{s.fullName}</p>
-                                                    <p className="text-[10px] font-bold text-gray-500">{s.teacherName || 'بدون مشرف'} • {s.groupName}</p>
+                                                    <p className="text-[10px] font-black text-gray-700">{s.teacherName || 'بدون مشرف'} • {s.groupName}</p>
                                                 </div>
                                             </div>
                                             <span className={cn(
