@@ -34,7 +34,8 @@ export const addStudent = async (student: Omit<Student, 'id'>): Promise<string> 
                 address: student.address,
                 notes: student.notes,
                 enrollment_date: student.enrollmentDate,
-                appointment: student.appointment
+                appointment: student.appointment,
+                course_registered_at: (student as any).courseRegisteredAt || null,
             }])
             .select('id')
             .single();
@@ -61,6 +62,7 @@ export const updateStudent = async (id: string, data: Partial<Student>): Promise
         if (data.appointment !== undefined) updates.appointment = data.appointment;
         if (data.enrollmentDate) updates.enrollment_date = data.enrollmentDate;
         if (data.archivedDate) updates.archived_date = data.archivedDate;
+        if ((data as any).courseRegisteredAt !== undefined) updates.course_registered_at = (data as any).courseRegisteredAt;
 
         const { error } = await supabase
             .from('students')

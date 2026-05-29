@@ -4,10 +4,11 @@ import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getTeachers } from '@/features/teachers/services/teacherService';
 import { addGroup } from '@/features/groups/services/groupService';
+import { getCourses } from '@/features/courses/services/courseService';
 import Modal from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Plus, X } from 'lucide-react';
+import { Plus, X, BookOpen } from 'lucide-react';
 
 const DEFAULT_COLORS: Record<string, string> = {
     'قرآن': 'bg-blue-100 text-blue-600',
@@ -44,9 +45,15 @@ export default function AddGroupModal({ isOpen, onClose }: AddGroupModalProps) {
         queryFn: () => getTeachers()
     });
 
+    const { data: courses } = useQuery({
+        queryKey: ['courses'],
+        queryFn: () => getCourses()
+    });
+
     const [name, setName] = useState('');
     const [teacherId, setTeacherId] = useState('');
     const [type, setType] = useState('قرآن');
+    const [courseId, setCourseId] = useState('');
     const [maxStudentsPerHour, setMaxStudentsPerHour] = useState(5);
     const [customTypes, setCustomTypes] = useState<string[]>([]);
     const [showNewInput, setShowNewInput] = useState(false);
@@ -66,6 +73,7 @@ export default function AddGroupModal({ isOpen, onClose }: AddGroupModalProps) {
             setName('');
             setTeacherId('');
             setType('قرآن');
+            setCourseId('');
         }
     });
 
@@ -97,7 +105,8 @@ export default function AddGroupModal({ isOpen, onClose }: AddGroupModalProps) {
             schedule: '',
             count: 0,
             color: DEFAULT_COLORS[type] || CUSTOM_COLOR,
-            maxStudentsPerHour: maxStudentsPerHour || 5
+            maxStudentsPerHour: maxStudentsPerHour || 5,
+            courseId: courseId || null,
         });
     };
 
@@ -186,6 +195,23 @@ export default function AddGroupModal({ isOpen, onClose }: AddGroupModalProps) {
                         placeholder="مثال: 1 أو أ"
                         className="w-full h-12 bg-gray-50 border border-gray-100 rounded-xl px-4 text-right font-bold focus:outline-none focus:ring-2 focus:ring-purple-500/10"
                     />
+                </div>
+
+                <div className="space-y-2">
+                    <label className="text-sm font-bold text-gray-600 block">الدورة المرتبطة</label>
+                    <select
+                        required
+                        value={courseId}
+                        onChange={(e) => setCourseId(e.target.value)}
+                        className="w-full h-12 bg-gray-50 border border-gray-100 rounded-xl px-4 text-right font-bold focus:outline-none focus:ring-2 focus:ring-purple-500/10"
+                    >
+                        <option value="">اختر دورة</option>
+                        {courses?.map((c) => (
+                            <option key={c.id} value={c.id}>
+                                {c.name}
+                            </option>
+                        ))}
+                    </select>
                 </div>
 
                 <div className="space-y-2">

@@ -44,7 +44,8 @@ create table groups (
   name text not null,                             
   teacher_id uuid references teachers(id),        
   schedule text,
-  max_students_per_hour integer default 5,        
+  max_students_per_hour integer default 5,
+  course_id uuid references courses(id),
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
@@ -63,7 +64,8 @@ create table students (
   appointment text,                               
   notes text,                                     
   enrollment_date date,                           
-  archived_date date,                             
+  archived_date date,
+  course_registered_at timestamp with time zone,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 

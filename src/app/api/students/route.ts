@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
         const supabase = createServerSupabase();
         let query = supabase
             .from('students')
-            .select('id, full_name, group_id, parent_phone, status, monthly_amount, birth_date, address, appointment, notes, enrollment_date, archived_date, created_at');
+            .select('id, full_name, group_id, parent_phone, status, monthly_amount, birth_date, address, appointment, notes, enrollment_date, archived_date, created_at, course_registered_at');
 
         if (groupIds) {
             const ids = groupIds.split(',');
@@ -42,6 +42,7 @@ export async function GET(request: NextRequest) {
             notes: row.notes,
             enrollmentDate: row.enrollment_date || (row.created_at ? row.created_at.split('T')[0] : new Date().toISOString().split('T')[0]),
             archivedDate: row.archived_date,
+            courseRegisteredAt: row.course_registered_at,
             whatsapp: row.parent_phone,
             email: '',
             password: '',

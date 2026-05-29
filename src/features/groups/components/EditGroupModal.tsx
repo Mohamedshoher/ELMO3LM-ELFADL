@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { updateGroup } from '@/features/groups/services/groupService';
 import { getTeachers } from '@/features/teachers/services/teacherService';
+import { getCourses } from '@/features/courses/services/courseService';
 import Modal from '@/components/ui/modal';
 import { Save, X } from 'lucide-react';
 
@@ -17,16 +18,22 @@ export default function EditGroupModal({ isOpen, onClose, group }: EditGroupModa
     const queryClient = useQueryClient();
     const { data: teachers } = useQuery({ queryKey: ['teachers'], queryFn: () => getTeachers() });
 
+    const { data: courses } = useQuery({
+        queryKey: ['courses'],
+        queryFn: () => getCourses()
+    });
+
     const [editGroupName, setEditGroupName] = useState('');
     const [editTeacherId, setEditTeacherId] = useState('');
     const [editMaxStudentsPerHour, setEditMaxStudentsPerHour] = useState(5);
+    const [editCourseId, setEditCourseId] = useState('');
 
-    // تحديث البيانات عند فتح النافذة لمجموعة معينة
     useEffect(() => {
         if (group) {
             setEditGroupName(group.name || '');
             setEditTeacherId(group.teacherId || '');
             setEditMaxStudentsPerHour(group.maxStudentsPerHour || 5);
+            setEditCourseId(group.courseId || '');
         }
     }, [group]);
 
@@ -47,7 +54,8 @@ export default function EditGroupModal({ isOpen, onClose, group }: EditGroupModa
                 name: editGroupName,
                 teacherId: editTeacherId || null,
                 teacher: selectedTeacher?.fullName || 'غير محدد',
-                maxStudentsPerHour: Number(editMaxStudentsPerHour) || 5
+                maxStudentsPerHour: Number(editMaxStudentsPerHour) || 5,
+                courseId: editCourseId || null,
             }
         });
     };
@@ -69,6 +77,21 @@ export default function EditGroupModal({ isOpen, onClose, group }: EditGroupModa
                         className="w-full h-11 bg-gray-50 border border-gray-200 rounded-2xl px-4 text-right text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all shadow-inner"
                         placeholder="مثلاً: قرآن 1"
                     />
+                </div>
+
+                {/* حقل الدورة المرتبطة */}
+                <div className="space-y-1.5">
+                    <label className="text-[11px] font-black text-gray-400 pr-1">الدورة المرتبطة</label>
+                    <select
+                        value={editCourseId}
+                        onChange={(e) => setEditCourseId(e.target.value)}
+                        className="w-full h-11 bg-gray-50 border border-gray-200 rounded-2xl px-4 text-right text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all shadow-inner appearance-none"
+                    >
+                        <option value="">اختر دورة</option>
+                        {courses?.map((c: any) => (
+                            <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                    </select>
                 </div>
 
                 {/* حقل المدرس المسئول */}

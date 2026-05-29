@@ -21,7 +21,7 @@ export const getGroupById = async (groupId: string): Promise<Group | null> => {
     try {
         const { data, error } = await supabase
             .from('groups')
-            .select('id, name, teacher_id, schedule, max_students_per_hour')
+            .select('id, name, teacher_id, schedule, max_students_per_hour, course_id')
             .eq('id', groupId)
             .single();
 
@@ -35,6 +35,7 @@ export const getGroupById = async (groupId: string): Promise<Group | null> => {
             teacherId: data.teacher_id,
             schedule: data.schedule || '',
             maxStudentsPerHour: data.max_students_per_hour || 5,
+            courseId: data.course_id,
             students: [],
         } as unknown as Group;
     } catch (error) {
@@ -50,9 +51,10 @@ export const addGroup = async (group: Omit<Group, 'id'>): Promise<string> => {
             .from('groups')
             .insert([{
                 name: group.name,
-                teacher_id: group.teacherId, // Map to snake_case
+                teacher_id: group.teacherId,
                 schedule: group.schedule,
                 max_students_per_hour: group.maxStudentsPerHour || 5,
+                course_id: (group as any).courseId || null,
             }])
             .select('id')
             .single();
@@ -73,6 +75,7 @@ export const updateGroup = async (id: string, data: Partial<Group>): Promise<voi
         if (data.teacherId !== undefined) updates.teacher_id = data.teacherId;
         if (data.schedule) updates.schedule = data.schedule;
         if (data.maxStudentsPerHour !== undefined) updates.max_students_per_hour = data.maxStudentsPerHour;
+        if ((data as any).courseId !== undefined) updates.course_id = (data as any).courseId;
 
         const { error } = await supabase
             .from('groups')

@@ -381,7 +381,12 @@ export default function GroupsPage() {
                                             </div>
                                         ) : (
                                             <>
-                                                <div className="flex flex-col text-right min-w-0">
+                                                <div className="flex flex-col text-right min-w-0 gap-1">
+                                                    {group.courseName && (
+                                                        <span className="text-[11px] font-black text-purple-500 truncate leading-tight">
+                                                            {group.courseName}
+                                                        </span>
+                                                    )}
                                                     <span className="text-base font-bold text-gray-500 truncate leading-tight">{group.teacher}</span>
                                                 </div>
 

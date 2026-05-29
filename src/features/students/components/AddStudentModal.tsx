@@ -42,6 +42,8 @@ export default function AddStudentModal({ isOpen, onClose, defaultGroupId }: Add
         return true;
     }) || []).sort((a, b) => a.name.localeCompare(b.name, 'ar'));
 
+    const selectedGroup = myGroups.find((g: Group) => g.id === formData.groupId);
+
     const mutation = useMutation({
         mutationFn: (newStudent: Omit<Student, 'id'>) => addStudent(newStudent),
         onMutate: async (newStudent) => {
@@ -82,7 +84,11 @@ export default function AddStudentModal({ isOpen, onClose, defaultGroupId }: Add
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        mutation.mutate(formData as any);
+        const data = { ...formData };
+        if (selectedGroup?.courseId) {
+            data.courseRegisteredAt = new Date().toISOString();
+        }
+        mutation.mutate(data as any);
     };
 
     return (

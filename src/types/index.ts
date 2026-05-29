@@ -30,6 +30,7 @@ export interface Student {
   appointment?: string; // موعد الحضور المتفق عليه
   notes?: string;
   archivedDate?: string; // تاريخ الأرشفة ISO Date YYYY-MM-DD
+  courseRegisteredAt?: string; // تاريخ التسجيل في الدورة
 }
 
 export interface Teacher {
@@ -57,6 +58,8 @@ export interface Group {
   count?: number; // عدد الطلاب في المجموعة
   color?: string; // لون المجموعة للعرض
   maxStudentsPerHour?: number; // الحد الأقصى لعدد الطلاب في الساعة
+  courseId?: string | null; // الدورة المرتبطة بالمجموعة
+  courseName?: string; // اسم الدورة
 }
 
 export interface AttendanceRecord {
