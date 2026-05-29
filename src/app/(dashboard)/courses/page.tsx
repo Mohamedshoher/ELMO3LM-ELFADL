@@ -42,7 +42,7 @@ export default function CoursesPage() {
                         <Loader2 size={32} className="text-purple-600 animate-spin" />
                     </div>
                 ) : !courses || courses.length === 0 ? (
-                    <FadeIn>
+                    <FadeIn show={true}>
                         <div className="text-center py-20">
                             <div className="w-20 h-20 bg-purple-50 rounded-3xl flex items-center justify-center mx-auto mb-4">
                                 <BookOpen size={36} className="text-purple-300" />
@@ -54,7 +54,7 @@ export default function CoursesPage() {
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                         {courses.map((course) => (
-                            <FadeIn key={course.id}>
+                            <FadeIn key={course.id} show={true}>
                                 <CourseCard course={course} />
                             </FadeIn>
                         ))}
