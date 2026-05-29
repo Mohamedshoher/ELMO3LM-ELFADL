@@ -12,6 +12,7 @@ import { Course } from '@/types';
 export default function CoursesPage() {
     const { data: courses, isLoading } = useCourses();
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [editCourse, setEditCourse] = useState<Course | null>(null);
     const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
 
     return (
@@ -58,14 +59,14 @@ export default function CoursesPage() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                         {courses.map((course) => (
                             <FadeIn key={course.id} show={true}>
-                                <CourseCard course={course} onClick={() => setSelectedCourse(course)} />
+                                <CourseCard course={course} onClick={() => setSelectedCourse(course)} onEdit={() => setEditCourse(course)} />
                             </FadeIn>
                         ))}
                     </div>
                 )}
             </div>
 
-            <AddCourseModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} />
+            <AddCourseModal isOpen={isAddModalOpen || !!editCourse} onClose={() => { setIsAddModalOpen(false); setEditCourse(null); }} editCourse={editCourse} />
             {selectedCourse && (
                 <CourseDetailModal
                     course={selectedCourse}

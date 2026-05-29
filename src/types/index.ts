@@ -110,6 +110,7 @@ export interface Course {
   name: string;
   lecturesCount: number;
   link: string;
+  bookLink?: string;
   createdAt: string;
 }
 

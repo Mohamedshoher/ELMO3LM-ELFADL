@@ -1,21 +1,28 @@
 "use client";
 
 import { Course } from '@/types';
-import { BookOpen, Play, Trash2, ExternalLink } from 'lucide-react';
+import { BookOpen, Play, Trash2, ExternalLink, Pencil, Book } from 'lucide-react';
 import { useDeleteCourse } from '../hooks/useCourses';
 
 interface CourseCardProps {
     course: Course;
     onClick?: () => void;
+    onEdit?: () => void;
 }
 
-export default function CourseCard({ course, onClick }: CourseCardProps) {
+export default function CourseCard({ course, onClick, onEdit }: CourseCardProps) {
     const deleteMutation = useDeleteCourse();
 
-    const handleDelete = () => {
+    const handleDelete = (e: React.MouseEvent) => {
+        e.stopPropagation();
         if (confirm(`هل أنت متأكد من حذف "${course.name}"؟`)) {
             deleteMutation.mutate(course.id);
         }
+    };
+
+    const handleEditClick = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        onEdit?.();
     };
 
     const getDomain = (url: string) => {
@@ -41,13 +48,22 @@ export default function CourseCard({ course, onClick }: CourseCardProps) {
                     <div className="w-12 h-12 bg-purple-50 rounded-2xl flex items-center justify-center shrink-0">
                         <BookOpen size={22} className="text-purple-600" />
                     </div>
-                    <button
-                        onClick={handleDelete}
-                        className="w-8 h-8 flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all opacity-0 group-hover:opacity-100"
-                        title="حذف الدورة"
-                    >
-                        <Trash2 size={16} />
-                    </button>
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                        <button
+                            onClick={handleEditClick}
+                            className="w-8 h-8 flex items-center justify-center text-gray-300 hover:text-purple-500 hover:bg-purple-50 rounded-xl transition-all"
+                            title="تعديل الدورة"
+                        >
+                            <Pencil size={16} />
+                        </button>
+                        <button
+                            onClick={handleDelete}
+                            className="w-8 h-8 flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                            title="حذف الدورة"
+                        >
+                            <Trash2 size={16} />
+                        </button>
+                    </div>
                 </div>
 
                 <h3 className="text-base font-black text-gray-900 mb-3 line-clamp-2">{course.name}</h3>
@@ -59,15 +75,28 @@ export default function CourseCard({ course, onClick }: CourseCardProps) {
                     </div>
                 </div>
 
-                <a
-                    href={course.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors ${platformColor} hover:brightness-95`}
-                >
-                    <ExternalLink size={12} />
-                    {platform}
-                </a>
+                <div className="flex items-center gap-2 flex-wrap">
+                    <a
+                        href={course.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors ${platformColor} hover:brightness-95`}
+                    >
+                        <ExternalLink size={12} />
+                        {platform}
+                    </a>
+                    {course.bookLink && (
+                        <a
+                            href={course.bookLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold border border-amber-100 bg-amber-50 text-amber-600 hover:brightness-95 transition-colors"
+                        >
+                            <Book size={12} />
+                            الكتاب
+                        </a>
+                    )}
+                </div>
             </div>
         </div>
     );

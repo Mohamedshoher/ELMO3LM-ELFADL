@@ -15,7 +15,21 @@ export const getCourses = async (): Promise<Course[]> => {
     }
 };
 
-export const addCourse = async (course: { name: string; lecturesCount: number; link: string }): Promise<string> => {
+export const updateCourse = async (course: { id: string; name?: string; lecturesCount?: number; link?: string; bookLink?: string }): Promise<void> => {
+    try {
+        const res = await fetch('/api/courses', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(course),
+        });
+        if (!res.ok) throw new Error('Failed to update course');
+    } catch (error) {
+        console.error("Error updating course:", error);
+        throw error;
+    }
+};
+
+export const addCourse = async (course: { name: string; lecturesCount: number; link: string; bookLink?: string }): Promise<string> => {
     try {
         const { data, error } = await supabase
             .from('courses')
@@ -23,6 +37,7 @@ export const addCourse = async (course: { name: string; lecturesCount: number; l
                 name: course.name,
                 lectures_count: course.lecturesCount,
                 link: course.link,
+                book_link: course.bookLink || null,
             }])
             .select('id')
             .single();
@@ -34,6 +49,8 @@ export const addCourse = async (course: { name: string; lecturesCount: number; l
         throw error;
     }
 };
+
+
 
 export const deleteCourse = async (id: string): Promise<void> => {
     try {
