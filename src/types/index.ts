@@ -100,6 +100,14 @@ export interface FinancialTransaction {
   performedBy: string; // User ID (Admin/Supervisor)
 }
 
+export interface Course {
+  id: string;
+  name: string;
+  lecturesCount: number;
+  link: string;
+  createdAt: string;
+}
+
 export interface DailyReport {
   id: string;
   teacherId: string;

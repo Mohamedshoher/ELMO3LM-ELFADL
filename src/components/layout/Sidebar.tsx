@@ -20,7 +20,8 @@ import {
     MessageCircle,
     Zap,
     UserCheck,
-    CalendarClock
+    CalendarClock,
+    BookOpen
 } from 'lucide-react';
 import { FadeIn } from '@/components/ui/transition';
 import { logout } from '@/features/auth/services/authService';
@@ -110,6 +111,12 @@ export default function Sidebar() {
             href: '/automation',
             icon: Zap,
             roles: ['director']
+        },
+        {
+            label: 'الدورات',
+            href: '/courses',
+            icon: BookOpen,
+            roles: ['director', 'supervisor', 'teacher']
         },
     ];
 

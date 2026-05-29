@@ -29,7 +29,7 @@ export default function AddStudentModal({ isOpen, onClose, defaultGroupId }: Add
         enrollmentDate: new Date().toISOString().split('T')[0],
         status: (isTeacher ? 'pending' : 'active') as 'active' | 'archived' | 'pending',
         groupId: defaultGroupId || '',
-        monthlyAmount: 80,
+        monthlyAmount: 0,
     });
 
     const { data: groups } = useQuery({
@@ -61,7 +61,7 @@ export default function AddStudentModal({ isOpen, onClose, defaultGroupId }: Add
                 enrollmentDate: new Date().toISOString().split('T')[0],
                 status: isTeacher ? 'pending' : 'active',
                 groupId: defaultGroupId || '',
-                monthlyAmount: 80,
+                monthlyAmount: 0,
             });
 
             return { previousStudents };

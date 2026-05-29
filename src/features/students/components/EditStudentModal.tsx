@@ -29,7 +29,7 @@ export default function EditStudentModal({ student, isOpen, onClose }: EditStude
         enrollmentDate: '',
         status: 'active' as Student['status'],
         groupId: '',
-        monthlyAmount: 80,
+        monthlyAmount: 0,
         appointment: '',
     });
 
@@ -48,7 +48,7 @@ export default function EditStudentModal({ student, isOpen, onClose }: EditStude
                 enrollmentDate: student.enrollmentDate || '',
                 status: student.status || 'active',
                 groupId: student.groupId || '',
-                monthlyAmount: student.monthlyAmount || 80,
+                monthlyAmount: student.monthlyAmount ?? 0,
                 appointment: student.appointment || '',
             });
         }

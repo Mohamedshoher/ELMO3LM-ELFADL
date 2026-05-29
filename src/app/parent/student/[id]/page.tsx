@@ -196,7 +196,7 @@ export default function StudentDetailParentPage() {
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="flex items-center justify-between px-4">
                 <h3 className="text-lg font-black text-gray-900">حالة المصروفات</h3>
-                <span className="bg-blue-600 text-white px-4 py-1.5 rounded-full text-[10px] font-black">الرسوم: {student.monthlyAmount || 80} جنيه</span>
+                <span className="bg-blue-600 text-white px-4 py-1.5 rounded-full text-[10px] font-black">الرسوم: {student.monthlyAmount ?? 0} جنيه</span>
             </div>
 
             <div className="px-4 pb-20 space-y-4">

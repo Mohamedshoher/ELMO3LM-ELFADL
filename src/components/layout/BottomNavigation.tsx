@@ -12,7 +12,8 @@ import {
     User,
     Zap,
     MessageCircle,
-    FileText
+    FileText,
+    BookOpen
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -31,6 +32,7 @@ export default function BottomNavigation() {
         { id: 'attendance', label: 'الحضور', icon: CalendarCheck, href: '/attendance-report' },
         { id: 'groups', label: 'المجموعات', icon: LayoutGrid, href: '/groups' },
         { id: 'exams', label: 'الاختبارات', icon: FileText, href: '/exams-report' },
+        { id: 'courses', label: 'الدورات', icon: BookOpen, href: '/courses' },
     ];
 
     const filteredNavItems = navItems.filter(item => {
