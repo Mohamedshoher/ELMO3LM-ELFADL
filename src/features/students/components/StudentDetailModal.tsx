@@ -69,12 +69,12 @@ export default function StudentDetailModal({
 
     // تعريف التبويبات (الأزرار العلوية)
     const tabs = [
-        { id: 'schedule', label: 'مواعيد الحضور', icon: Clock },
         { id: 'attendance', label: 'سجل الحضور', icon: Calendar },
-        { id: 'fees', label: 'سجل المصروفات', icon: CreditCard },
-        { id: 'exams', label: 'سجل الاختبارات', icon: BookOpen },
-        { id: 'notes', label: 'سجل الملحوظات', icon: FileText },
+        { id: 'schedule', label: 'مواعيد الحضور', icon: Clock },
         { id: 'courses', label: 'الدورات', icon: Award },
+        { id: 'exams', label: 'سجل الاختبارات', icon: BookOpen },
+        { id: 'fees', label: 'سجل المصروفات', icon: CreditCard },
+        { id: 'notes', label: 'سجل الملحوظات', icon: FileText },
     ];
 
     return (

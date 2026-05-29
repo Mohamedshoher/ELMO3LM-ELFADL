@@ -35,7 +35,6 @@ export interface AutomationLog {
 // 2. مساعدات التواريخ (Date Utilities)
 // ==========================================
 
-const WEEKEND_DAYS = [4, 5]; // الخميس والجمعة
 const DAYS_MAP = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
 
 /** تحويل أي صيغة تاريخ إلى YYYY-MM-DD */
@@ -217,8 +216,6 @@ export const checkMissingDailyReports = async (): Promise<AutomationLog[]> => {
     const dayOfWeek = target.getDay();
     const startTime = new Date();
 
-    if (WEEKEND_DAYS.includes(dayOfWeek)) return [];
-
     const rules = await getRules();
     const rule = rules.find(r => r.trigger === 'missing_daily_report' && r.enabled);
     if (!rule) return [];
@@ -267,8 +264,6 @@ export const checkMissingDailyExams = async (): Promise<AutomationLog[]> => {
     const dateStr = normalizeDate(target);
     const dayOfWeek = target.getDay();
     const startTime = new Date();
-
-    if (WEEKEND_DAYS.includes(dayOfWeek)) return [];
 
     const rules = await getRules();
     const rule = rules.find(r => r.trigger === 'repeated_exams' && r.enabled);
