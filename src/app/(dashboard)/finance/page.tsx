@@ -2,11 +2,9 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import {
-    ArrowUpCircle,
     ArrowDownCircle,
     Wallet,
     Plus,
-    Gift,
     ChevronDown,
     ChevronLeft,
     ChevronRight,
@@ -46,6 +44,7 @@ export default function FinancePage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isSalaryStatusOpen, setIsSalaryStatusOpen] = useState(false);
     const [isDeficitOpen, setIsDeficitOpen] = useState(false);
+    const [showIncomeBreakdown, setShowIncomeBreakdown] = useState(false);
     const queryClient = useQueryClient();
     const { data: teachers = [] } = useTeachers();
     const { data: students = [] } = useStudents();
@@ -495,170 +494,133 @@ export default function FinancePage() {
                         </div>
                     )}
 
-                    <div className="flex items-center gap-2">
-                        <div className="text-right hidden sm:block">
-                            <h1 className="text-sm font-black text-gray-900 leading-tight">المالية والمصروفات</h1>
-                            <p className="text-[10px] font-bold text-gray-400">مركز الشاطبي</p>
-                        </div>
-                        <div className="w-11 h-11 bg-white border border-gray-100 rounded-[16px] flex items-center justify-center text-blue-600 shadow-sm">
-                            <Wallet size={22} />
-                        </div>
-                    </div>
+
                 </div>
             </div>
 
             {/* Content */}
-            <div className="max-w-7xl mx-auto px-4 py-10 space-y-12">
+            <div className="max-w-7xl mx-auto px-4 py-8 space-y-5">
                 {isLoading ? (
                     <div className="flex flex-col items-center justify-center py-20 gap-4">
                         <div className="w-16 h-16 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin" />
                         <p className="text-gray-400 font-bold font-sans">جاري التحميل...</p>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
-                        {/* Teacher Collections */}
-                        <Link href="/finance/teachers" className="bg-white/90 backdrop-blur-xl border border-purple-100/50 rounded-[32px] p-6 flex flex-col justify-between min-h-[160px] shadow-sm hover:shadow-2xl hover:shadow-purple-500/10 hover:-translate-y-1 transition-all group">
-                            <div className="w-12 h-12 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center shadow-sm border border-purple-100/30">
-                                <ArrowUpCircle size={24} />
-                            </div>
-                            <div className="text-right">
-                                <p className="text-[11px] font-black text-gray-400 mb-1">محصل المدرسين</p>
-                                <h3 className="text-2xl font-black text-purple-600 font-sans tracking-tight">
-                                    {teacherFees.toLocaleString()} <span className="text-xs">ج.م</span>
-                                </h3>
-                            </div>
-                        </Link>
-
-                        {/* Manager Direct */}
-                        <Link href="/finance/income" className="bg-white/90 backdrop-blur-xl border border-blue-100/50 rounded-[32px] p-6 flex flex-col justify-between min-h-[160px] shadow-sm hover:shadow-2xl hover:shadow-blue-500/10 hover:-translate-y-1 transition-all group">
-                            <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shadow-sm border border-blue-100/30">
-                                <Wallet size={24} />
-                            </div>
-                            <div className="text-right">
-                                <p className="text-[11px] font-black text-gray-400 mb-1">ما حصله المدير مباشر</p>
-                                <h3 className="text-2xl font-black text-blue-600 font-sans tracking-tight">
-                                    {feesByManager.toLocaleString()} <span className="text-xs">ج.م</span>
-                                </h3>
-                            </div>
-                        </Link>
-
-                        {/* From Teachers */}
-                        <Link href="/finance/income" className="bg-white/90 backdrop-blur-xl border border-sky-100/50 rounded-[32px] p-6 flex flex-col justify-between min-h-[160px] shadow-sm hover:shadow-2xl hover:shadow-sky-500/10 hover:-translate-y-1 transition-all group">
-                            <div className="w-12 h-12 bg-sky-50 text-sky-600 rounded-2xl flex items-center justify-center shadow-sm border border-sky-100/30">
-                                <Wallet size={24} />
-                            </div>
-                            <div className="text-right">
-                                <p className="text-[11px] font-black text-gray-400 mb-1">ما استلمه المدير من المدرسين</p>
-                                <h3 className="text-2xl font-black text-sky-600 font-sans tracking-tight">
-                                    {fromTeachers.toLocaleString()} <span className="text-xs">ج.م</span>
-                                </h3>
-                            </div>
-                        </Link>
-
-                        {/* Other Income */}
-                        <Link href="/finance/income" className="bg-white/90 backdrop-blur-xl border border-cyan-100/50 rounded-[32px] p-6 flex flex-col justify-between min-h-[160px] shadow-sm hover:shadow-2xl hover:shadow-cyan-500/10 hover:-translate-y-1 transition-all group">
-                            <div className="w-12 h-12 bg-cyan-50 text-cyan-600 rounded-2xl flex items-center justify-center shadow-sm border border-cyan-100/30">
-                                <ArrowUpCircle size={24} />
-                            </div>
-                            <div className="text-right">
-                                <p className="text-[11px] font-black text-gray-400 mb-1">إيرادات أخرى</p>
-                                <h3 className="text-2xl font-black text-cyan-600 font-sans tracking-tight">
-                                    {otherIncome.toLocaleString()} <span className="text-xs">ج.م</span>
-                                </h3>
-                            </div>
-                        </Link>
-
-                        {/* Deficit */}
-                        <button onClick={() => setIsDeficitOpen(true)} className="bg-white/90 backdrop-blur-xl border border-amber-100/50 rounded-[32px] p-6 flex flex-col justify-between min-h-[160px] shadow-sm hover:shadow-2xl hover:shadow-amber-500/10 hover:-translate-y-1 transition-all group text-right w-full">
-                            <div className="w-12 h-12 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center shadow-sm border border-amber-100/30">
-                                <AlertCircle size={24} />
-                            </div>
-                            <div className="text-right">
-                                <p className="text-[11px] font-black text-gray-400 mb-1">إجمالي العجز</p>
-                                <h3 className="text-2xl font-black text-amber-600 font-sans tracking-tight">
-                                    {totalGlobalDeficit.toLocaleString()} <span className="text-xs">ج.م</span>
-                                </h3>
-                            </div>
-                        </button>
-
-                        {/* Exempted */}
-                        <Link href="/finance/teachers" className="bg-white/90 backdrop-blur-xl border border-teal-100/50 rounded-[32px] p-6 flex flex-col justify-between min-h-[160px] shadow-sm hover:shadow-2xl hover:shadow-teal-500/10 hover:-translate-y-1 transition-all group">
-                            <div className="w-12 h-12 bg-teal-50 text-teal-600 rounded-2xl flex items-center justify-center shadow-sm border border-teal-100/30">
-                                <Gift size={24} />
-                            </div>
-                            <div className="text-right">
-                                <p className="text-[11px] font-black text-gray-400 mb-1">إجمالي المعفي عنه</p>
-                                <h3 className="text-2xl font-black text-teal-600 font-sans tracking-tight">
-                                    {totalGlobalExempted.toLocaleString()} <span className="text-xs">ج.م</span>
-                                </h3>
-                            </div>
-                        </Link>
-
-                        {/* Deductions */}
-                        <Link href="/finance/teachers" className="bg-white/90 backdrop-blur-xl border border-red-100/50 rounded-[32px] p-6 flex flex-col justify-between min-h-[160px] shadow-sm hover:shadow-2xl hover:shadow-red-500/10 hover:-translate-y-1 transition-all group">
-                            <div className="w-12 h-12 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center shadow-sm border border-red-100/30">
-                                <AlertCircle size={24} />
-                            </div>
-                            <div className="text-right">
-                                <p className="text-[11px] font-black text-gray-400 mb-1">إجمالي الخصومات</p>
-                                <h3 className="text-2xl font-black text-red-600 font-sans tracking-tight">
-                                    {totalGlobalDeductions.toLocaleString()} <span className="text-xs">ج.م</span>
-                                </h3>
-                            </div>
-                        </Link>
-
-                        {/* Salary Status */}
-                        <button onClick={() => setIsSalaryStatusOpen(true)} className="bg-white/90 backdrop-blur-xl border border-emerald-100/50 rounded-[32px] p-6 flex flex-col justify-between min-h-[160px] shadow-sm hover:shadow-2xl hover:shadow-emerald-500/10 hover:-translate-y-1 transition-all group text-right w-full">
-                            <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center shadow-sm border border-emerald-100/30">
-                                <Wallet size={24} />
-                            </div>
-                            <div className="space-y-1">
-                                <p className="text-[11px] font-black text-gray-400 mb-1">حالة الرواتب</p>
-                                <div className="flex items-center justify-between gap-2">
-                                    <span className="text-xs font-black text-green-600 bg-green-50 px-2 py-0.5 rounded-full">✅ {teacherPaymentStatus.paidCount}</span>
-                                    <span className="text-xs font-black text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">⏳ {teacherPaymentStatus.unpaidCount}</span>
+                    <>
+                        {/* Row 1: Income + Expenses */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* Income Card */}
+                            <div className="bg-white/90 backdrop-blur-xl border border-green-100/50 rounded-[32px] p-6 shadow-sm">
+                                <div className="flex items-center justify-between mb-3">
+                                    <button
+                                        onClick={() => setShowIncomeBreakdown(!showIncomeBreakdown)}
+                                        className={cn(
+                                            "w-10 h-10 bg-green-50 text-green-600 rounded-2xl flex items-center justify-center transition-all duration-300",
+                                            showIncomeBreakdown && "rotate-180"
+                                        )}
+                                    >
+                                        <ChevronDown size={22} />
+                                    </button>
+                                    <div className="text-right flex-1 mr-3">
+                                        <p className="text-[11px] font-black text-gray-400 mb-0.5">إجمالي الإيرادات</p>
+                                        <h3 className="text-3xl font-black text-green-600 font-sans tracking-tight">
+                                            {totalReceived.toLocaleString()} <span className="text-sm">ج.م</span>
+                                        </h3>
+                                    </div>
                                 </div>
-                                <p className="text-[10px] font-bold text-gray-400">المتبقي: <span className="font-black text-amber-600 font-sans">{teacherPaymentStatus.totalRemaining.toLocaleString()} ج.م</span></p>
+                                {showIncomeBreakdown && (
+                                    <div className="mt-4 pt-4 border-t border-green-100/50 space-y-2 animate-[fadeIn_0.3s_ease-out]">
+                                        {[
+                                            { label: 'محصل المدرسين', value: teacherFees, color: 'text-purple-600', bg: 'bg-purple-50/50', border: 'border-purple-100/50', href: '/finance/teachers' },
+                                            { label: 'تحصيل الإدارة', value: feesByManager, color: 'text-blue-600', bg: 'bg-blue-50/50', border: 'border-blue-100/50', href: '/finance/income' },
+                                            { label: 'مستلم من المدرسين', value: fromTeachers, color: 'text-sky-600', bg: 'bg-sky-50/50', border: 'border-sky-100/50', href: '/finance/income' },
+                                            { label: 'إيرادات أخرى', value: otherIncome, color: 'text-cyan-600', bg: 'bg-cyan-50/50', border: 'border-cyan-100/50', href: '/finance/income' },
+                                        ].map(item => (
+                                            <Link key={item.label} href={item.href}
+                                                className={`flex items-center justify-between p-3 ${item.bg} rounded-2xl ${item.border} border hover:shadow-sm transition-all`}>
+                                                <span className={`text-base font-black ${item.color} font-sans`}>{item.value.toLocaleString()} <span className="text-[9px]">ج.م</span></span>
+                                                <span className="text-[10px] font-bold text-gray-500">{item.label}</span>
+                                            </Link>
+                                        ))}
+                                        <Link href="/finance/income"
+                                            className="flex items-center justify-center py-2 text-[11px] font-black text-green-600 hover:text-green-700 transition-colors">
+                                            عرض التفاصيل الكاملة ←
+                                        </Link>
+                                    </div>
+                                )}
                             </div>
-                        </button>
 
-                        {/* Total Received */}
-                        <Link href="/finance/income" className="bg-white/90 backdrop-blur-xl border border-green-100/50 rounded-[32px] p-6 flex flex-col justify-between min-h-[160px] shadow-sm hover:shadow-2xl hover:shadow-green-500/10 hover:-translate-y-1 transition-all group">
-                            <div className="w-12 h-12 bg-green-50 text-green-600 rounded-2xl flex items-center justify-center shadow-sm border border-green-100/30">
-                                <ArrowUpCircle size={24} />
-                            </div>
-                            <div className="text-right">
-                                <p className="text-[11px] font-black text-gray-400 mb-1">إجمالي الإيرادات</p>
-                                <h3 className="text-2xl font-black text-green-600 font-sans tracking-tight">
-                                    {totalReceived.toLocaleString()} <span className="text-xs">ج.م</span>
-                                </h3>
-                            </div>
-                        </Link>
+                            {/* Expenses Card */}
+                            <Link href="/finance/expenses" className="bg-white/90 backdrop-blur-xl border border-red-100/50 rounded-[32px] p-6 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all group">
+                                <div className="flex items-center gap-4 mb-3">
+                                    <div className="w-10 h-10 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center">
+                                        <ArrowDownCircle size={22} />
+                                    </div>
+                                    <div className="text-right flex-1">
+                                        <p className="text-[11px] font-black text-gray-400 mb-0.5">إجمالي المصروفات</p>
+                                        <h3 className="text-3xl font-black text-red-600 font-sans tracking-tight">
+                                            {totalExpenses.toLocaleString()} <span className="text-sm">ج.م</span>
+                                        </h3>
+                                    </div>
+                                </div>
+                            </Link>
+                        </div>
 
-                        {/* Expenses */}
-                        <Link href="/finance/expenses" className="bg-white/90 backdrop-blur-xl border border-red-100/50 rounded-[32px] p-6 flex flex-col justify-between min-h-[160px] shadow-sm hover:shadow-2xl hover:shadow-red-500/10 hover:-translate-y-1 transition-all group">
-                            <div className="w-12 h-12 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center shadow-sm border border-red-100/30">
-                                <ArrowDownCircle size={24} />
+                        {/* Row 2: Teacher Analysis */}
+                        <div className="bg-white/90 backdrop-blur-xl border border-purple-100/50 rounded-[32px] p-6 shadow-sm">
+                            <div className="flex items-center justify-between mb-5">
+                                <div className="w-10 h-10 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center">
+                                    <Wallet size={22} />
+                                </div>
+                                <h3 className="text-sm font-black text-gray-700">تحليل المدرسين</h3>
+                                <Link href="/finance/teachers" className="text-[10px] font-bold text-purple-600 hover:underline">
+                                    التفاصيل ←
+                                </Link>
                             </div>
-                            <div className="text-right">
-                                <p className="text-[11px] font-black text-gray-400 mb-1">إجمالي المصروفات</p>
-                                <h3 className="text-2xl font-black text-red-600 font-sans tracking-tight">
-                                    {totalExpenses.toLocaleString()} <span className="text-xs">ج.م</span>
-                                </h3>
-                            </div>
-                        </Link>
 
-                        {/* Balance */}
+                            <div className="grid grid-cols-2 gap-3">
+                                <Link href="/finance/teachers" className="p-4 bg-purple-50/50 rounded-2xl border border-purple-100/50 hover:border-purple-300 transition-all">
+                                    <p className="text-[10px] font-bold text-gray-400 mb-1">المحصل</p>
+                                    <p className="text-xl font-black text-purple-600 font-sans">{teacherFees.toLocaleString()} <span className="text-[8px]">ج.م</span></p>
+                                </Link>
+                                <button onClick={() => setIsDeficitOpen(true)} className="p-4 bg-amber-50/50 rounded-2xl border border-amber-100/50 hover:border-amber-300 transition-all text-right w-full">
+                                    <p className="text-[10px] font-bold text-gray-400 mb-1">العجز</p>
+                                    <p className="text-xl font-black text-amber-600 font-sans">{totalGlobalDeficit.toLocaleString()} <span className="text-[8px]">ج.م</span></p>
+                                </button>
+                                <Link href="/finance/teachers" className="p-4 bg-teal-50/50 rounded-2xl border border-teal-100/50 hover:border-teal-300 transition-all">
+                                    <p className="text-[10px] font-bold text-gray-400 mb-1">المعفي عنه</p>
+                                    <p className="text-xl font-black text-teal-600 font-sans">{totalGlobalExempted.toLocaleString()} <span className="text-[8px]">ج.م</span></p>
+                                </Link>
+                                <Link href="/finance/teachers" className="p-4 bg-red-50/50 rounded-2xl border border-red-100/50 hover:border-red-300 transition-all">
+                                    <p className="text-[10px] font-bold text-gray-400 mb-1">الخصومات</p>
+                                    <p className="text-xl font-black text-red-600 font-sans">{totalGlobalDeductions.toLocaleString()} <span className="text-[8px]">ج.م</span></p>
+                                </Link>
+                            </div>
+
+                            <button onClick={() => setIsSalaryStatusOpen(true)} className="mt-4 w-full p-4 bg-emerald-50/50 rounded-2xl border border-emerald-100/50 hover:border-emerald-300 transition-all text-right">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xs font-black text-green-600 bg-green-50 px-2.5 py-1 rounded-full">✅ {teacherPaymentStatus.paidCount}</span>
+                                        <span className="text-xs font-black text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full">⏳ {teacherPaymentStatus.unpaidCount}</span>
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-bold text-gray-400">حالة الرواتب</p>
+                                        <p className="text-[10px] font-bold text-gray-500">المتبقي: <span className="font-black text-amber-600 font-sans">{teacherPaymentStatus.totalRemaining.toLocaleString()} ج.م</span></p>
+                                    </div>
+                                </div>
+                            </button>
+                        </div>
+
+                        {/* Row 3: Balance */}
                         <div className={cn(
-                            "backdrop-blur-xl border rounded-[32px] p-6 flex flex-col justify-between min-h-[160px] shadow-sm transition-all md:col-span-2",
-                            balance >= 0 ? "bg-green-700 text-white border-green-400/30 shadow-green-600/20" : "bg-red-700 text-white border-red-400/30 shadow-red-600/20"
+                            "backdrop-blur-xl border rounded-[32px] p-6 shadow-sm transition-all",
+                            balance >= 0 ? "bg-green-700 text-white border-green-400/30" : "bg-red-700 text-white border-red-400/30"
                         )}>
-                            <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center shadow-sm border border-white/30 text-white">
-                                <Wallet size={24} />
-                            </div>
-                            <div className="text-right flex items-end justify-between w-full mt-4">
-                                <div />
-                                <div>
+                            <div className="flex items-center justify-between">
+                                <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center border border-white/30">
+                                    <Wallet size={24} />
+                                </div>
+                                <div className="text-right">
                                     <p className="text-sm font-bold text-white/80 mb-1">{balance >= 0 ? 'صافي الربح النهائي' : 'صافي الخسارة'}</p>
                                     <h3 className="text-4xl md:text-5xl font-black font-sans tracking-tight drop-shadow-md">
                                         {balance >= 0 ? '+' : ''}{balance.toLocaleString()} <span className="text-lg md:text-xl text-white/80 font-bold">ج.م</span>
@@ -666,7 +628,7 @@ export default function FinancePage() {
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </>
                 )}
             </div>
         </div>

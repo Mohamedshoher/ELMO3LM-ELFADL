@@ -225,12 +225,21 @@ export default function FinanceTeachersPage() {
                         {exemptions.length === 0 ? (
                             <p className="text-xs text-gray-400 font-bold text-center py-8 bg-white rounded-2xl border border-dashed border-gray-100">لا توجد إعفاءات.</p>
                         ) : (
-                            exemptions.map((ex: any) => (
-                                <div key={ex.id} className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex items-center justify-between">
-                                    <div className="text-right"><p className="font-black text-sm text-gray-900">{ex.student_name}</p><p className="text-[10px] text-gray-400 font-bold">بواسطة: {ex.exempted_by}</p></div>
-                                    <p className="text-lg font-black text-teal-600 font-sans">{Number(ex.amount).toLocaleString()} <span className="text-[9px]">ج.م</span></p>
-                                </div>
-                            ))
+                            exemptions.map((ex: any) => {
+                                const student = students.find(s => s.id === ex.student_id);
+                                const group = student ? groups.find(g => g.id === student.groupId) : null;
+                                return (
+                                    <div key={ex.id} className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex items-center justify-between">
+                                        <div className="text-right">
+                                            <p className="font-black text-sm text-gray-900">{ex.student_name}</p>
+                                            <p className="text-[10px] text-gray-400 font-bold">
+                                                {group?.name && `${group.name} | `}بواسطة: {ex.exempted_by}
+                                            </p>
+                                        </div>
+                                        <p className="text-lg font-black text-teal-600 font-sans">{Number(ex.amount).toLocaleString()} <span className="text-[9px]">ج.م</span></p>
+                                    </div>
+                                );
+                            })
                         )}
                     </div>
                 )}
