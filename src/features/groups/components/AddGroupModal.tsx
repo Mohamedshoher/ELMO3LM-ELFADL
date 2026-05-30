@@ -8,29 +8,21 @@ import { getCourses } from '@/features/courses/services/courseService';
 import Modal from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Plus, X, BookOpen } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 
-const DEFAULT_COLORS: Record<string, string> = {
-    'قرآن': 'bg-blue-100 text-blue-600',
-    'تلقين': 'bg-green-100 text-green-600',
-    'نور بيان': 'bg-orange-100 text-orange-600',
-};
+const DEFAULT_SECTIONS = ['العقيدة'];
+const STORAGE_KEY = 'almoalem_group_sections';
 
-const DEFAULT_TYPES = Object.keys(DEFAULT_COLORS);
-const STORAGE_KEY = 'almoalem_custom_group_types';
-
-function loadCustomTypes(): string[] {
+function loadSections(): string[] {
     try {
         const saved = localStorage.getItem(STORAGE_KEY);
-        return saved ? JSON.parse(saved) : [];
-    } catch { return []; }
+        return saved ? JSON.parse(saved) : DEFAULT_SECTIONS;
+    } catch { return DEFAULT_SECTIONS; }
 }
 
-function saveCustomTypes(types: string[]) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(types));
+function saveSections(sections: string[]) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(sections));
 }
-
-const CUSTOM_COLOR = 'bg-gray-100 text-gray-600';
 
 interface AddGroupModalProps {
     isOpen: boolean;
@@ -52,18 +44,20 @@ export default function AddGroupModal({ isOpen, onClose }: AddGroupModalProps) {
 
     const [name, setName] = useState('');
     const [teacherId, setTeacherId] = useState('');
-    const [type, setType] = useState('قرآن');
+    const [section, setSection] = useState('');
     const [courseId, setCourseId] = useState('');
     const [maxStudentsPerHour, setMaxStudentsPerHour] = useState(5);
-    const [customTypes, setCustomTypes] = useState<string[]>([]);
+    const [sectionsList, setSectionsList] = useState<string[]>([]);
     const [showNewInput, setShowNewInput] = useState(false);
-    const [newTypeName, setNewTypeName] = useState('');
+    const [newSectionName, setNewSectionName] = useState('');
 
     useEffect(() => {
-        if (isOpen) setCustomTypes(loadCustomTypes());
+        if (isOpen) {
+            const loaded = loadSections();
+            setSectionsList(loaded);
+            setSection(loaded[0] || '');
+        }
     }, [isOpen]);
-
-    const allTypes = [...DEFAULT_TYPES, ...customTypes];
 
     const addMutation = useMutation({
         mutationFn: addGroup,
@@ -72,39 +66,40 @@ export default function AddGroupModal({ isOpen, onClose }: AddGroupModalProps) {
             onClose();
             setName('');
             setTeacherId('');
-            setType('قرآن');
+            setSection(sectionsList[0] || '');
             setCourseId('');
         }
     });
 
-    const handleAddCustomType = () => {
-        const trimmed = newTypeName.trim();
-        if (!trimmed || allTypes.includes(trimmed)) return;
-        const updated = [...customTypes, trimmed];
-        setCustomTypes(updated);
-        saveCustomTypes(updated);
-        setType(trimmed);
-        setNewTypeName('');
+    const handleAddSection = () => {
+        const trimmed = newSectionName.trim();
+        if (!trimmed || sectionsList.includes(trimmed)) return;
+        const updated = [...sectionsList, trimmed];
+        setSectionsList(updated);
+        saveSections(updated);
+        setSection(trimmed);
+        setNewSectionName('');
         setShowNewInput(false);
     };
 
-    const handleRemoveCustomType = (t: string) => {
-        const updated = customTypes.filter(ct => ct !== t);
-        setCustomTypes(updated);
-        saveCustomTypes(updated);
-        if (type === t) setType('قرآن');
+    const handleRemoveSection = (s: string) => {
+        if (sectionsList.length <= 1) return;
+        const updated = sectionsList.filter(cs => cs !== s);
+        setSectionsList(updated);
+        saveSections(updated);
+        if (section === s) setSection(updated[0] || '');
     };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         const selectedTeacher = teachers?.find(t => t.id === teacherId);
         addMutation.mutate({
-            name: `${type} (${name})`,
+            name: `${section} - ${name}`,
             teacherId: selectedTeacher?.id || null,
             teacher: selectedTeacher?.fullName || '',
             schedule: '',
             count: 0,
-            color: DEFAULT_COLORS[type] || CUSTOM_COLOR,
+            color: 'bg-purple-100 text-purple-600',
             maxStudentsPerHour: maxStudentsPerHour || 5,
             courseId: courseId || null,
         });
@@ -115,58 +110,55 @@ export default function AddGroupModal({ isOpen, onClose }: AddGroupModalProps) {
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
 
                 <div className="space-y-2">
-                    <label className="text-sm font-bold text-gray-600 block">نوع المجموعة</label>
+                    <label className="text-sm font-bold text-gray-600 block">القسم</label>
                     <div className="grid grid-cols-2 gap-2">
-                        {allTypes.map((t) => {
-                            const isCustom = customTypes.includes(t);
-                            return (
-                                <div key={t} className="relative group">
+                        {sectionsList.map((s) => (
+                            <div key={s} className="relative group">
+                                <button
+                                    type="button"
+                                    onClick={() => setSection(s)}
+                                    className={cn(
+                                        "w-full py-2 rounded-xl text-xs font-bold border transition-all",
+                                        section === s
+                                            ? "bg-purple-600 text-white border-purple-600"
+                                            : "bg-white text-gray-500 border-gray-100 hover:border-purple-200"
+                                    )}
+                                >
+                                    {s}
+                                </button>
+                                {sectionsList.length > 1 && (
                                     <button
                                         type="button"
-                                        onClick={() => setType(t)}
-                                        className={cn(
-                                            "w-full py-2 rounded-xl text-xs font-bold border transition-all",
-                                            type === t
-                                                ? "bg-purple-600 text-white border-purple-600"
-                                                : "bg-white text-gray-500 border-gray-100 hover:border-purple-200"
-                                        )}
+                                        onClick={() => handleRemoveSection(s)}
+                                        className="absolute -top-1.5 -left-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                                     >
-                                        {t}
+                                        <X size={10} />
                                     </button>
-                                    {isCustom && (
-                                        <button
-                                            type="button"
-                                            onClick={() => handleRemoveCustomType(t)}
-                                            className="absolute -top-1.5 -left-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                                        >
-                                            <X size={10} />
-                                        </button>
-                                    )}
-                                </div>
-                            );
-                        })}
+                                )}
+                            </div>
+                        ))}
 
                         {showNewInput ? (
                             <div className="col-span-2 flex items-center gap-2">
                                 <input
                                     type="text"
-                                    value={newTypeName}
-                                    onChange={(e) => setNewTypeName(e.target.value)}
-                                    placeholder="اسم النوع الجديد"
+                                    value={newSectionName}
+                                    onChange={(e) => setNewSectionName(e.target.value)}
+                                    placeholder="اسم القسم الجديد"
                                     className="flex-1 h-10 bg-gray-50 border border-gray-100 rounded-xl px-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-purple-500/10"
                                     autoFocus
-                                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddCustomType(); } }}
+                                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddSection(); } }}
                                 />
                                 <button
                                     type="button"
-                                    onClick={handleAddCustomType}
+                                    onClick={handleAddSection}
                                     className="h-10 px-4 bg-purple-600 text-white rounded-xl text-xs font-bold hover:bg-purple-700 transition-colors"
                                 >
                                     إضافة
                                 </button>
                                 <button
                                     type="button"
-                                    onClick={() => { setShowNewInput(false); setNewTypeName(''); }}
+                                    onClick={() => { setShowNewInput(false); setNewSectionName(''); }}
                                     className="h-10 px-3 bg-gray-100 text-gray-500 rounded-xl text-xs font-bold hover:bg-gray-200 transition-colors"
                                 >
                                     إلغاء
@@ -179,14 +171,14 @@ export default function AddGroupModal({ isOpen, onClose }: AddGroupModalProps) {
                                 className="py-2 rounded-xl text-xs font-bold border border-dashed border-gray-300 text-gray-400 hover:border-purple-300 hover:text-purple-500 transition-all flex items-center justify-center gap-1"
                             >
                                 <Plus size={14} />
-                                إضافة نوع
+                                إضافة قسم
                             </button>
                         )}
                     </div>
                 </div>
 
                 <div className="space-y-2">
-                    <label className="text-sm font-bold text-gray-600 block">اسم/رقم المجموعة</label>
+                    <label className="text-sm font-bold text-gray-600 block">اسم المجموعة</label>
                     <input
                         required
                         type="text"

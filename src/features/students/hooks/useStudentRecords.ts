@@ -12,7 +12,10 @@ import {
     deleteFeeRecord,
     addLeaveRequest,
     getStudentExemptions,
-    deleteExemptionRecord
+    deleteExemptionRecord,
+    getStudentListens,
+    addListenRecord,
+    deleteListenRecord
 } from "../services/recordsService";
 
 export const useStudentRecords = (studentId: string) => {
@@ -177,6 +180,32 @@ export const useStudentRecords = (studentId: string) => {
 
 
 
+    const listensQuery = useQuery({
+        queryKey: ['listens', studentId],
+        queryFn: () => getStudentListens(studentId),
+        enabled: !!studentId
+    });
+
+    const addListen = useMutation({
+        mutationFn: addListenRecord,
+        onMutate: async (newRecord) => {
+            await queryClient.cancelQueries({ queryKey: ['listens', studentId] });
+            const previousListens = queryClient.getQueryData(['listens', studentId]);
+            queryClient.setQueryData(['listens', studentId], (old: any) => [...(old || []), { ...newRecord, id: 'temp-' + Date.now() }]);
+            return { previousListens };
+        },
+        onSettled: () => {
+            queryClient.invalidateQueries({ queryKey: ['listens', studentId] });
+        }
+    });
+
+    const deleteListen = useMutation({
+        mutationFn: deleteListenRecord,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['listens', studentId] });
+        }
+    });
+
     return {
         attendance: attendanceQuery.data || [],
         isLoadingAttendance: attendanceQuery.isLoading,
@@ -190,6 +219,8 @@ export const useStudentRecords = (studentId: string) => {
         isLoadingPlans: plansQuery.isLoading,
         notes: notesQuery.data || [],
         isLoadingNotes: notesQuery.isLoading,
+        listens: listensQuery.data || [],
+        isLoadingListens: listensQuery.isLoading,
 
         addAttendance,
         addExam,
@@ -201,7 +232,9 @@ export const useStudentRecords = (studentId: string) => {
         deleteExam,
         deleteFee,
         deleteExemption,
-        deleteNote
+        deleteNote,
+        addListen,
+        deleteListen
     };
 };
 

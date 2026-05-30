@@ -138,12 +138,22 @@ export const getAllAttendance = async (): Promise<AttendanceRecord[]> => {
 };
 
 export const addAttendanceRecord = async (record: { studentId: string, status: 'present' | 'absent', day: number, month: string }): Promise<AttendanceRecord> => {
+    const date = `${record.month}-${String(record.day).padStart(2, '0')}`;
+
+    // حذف أي سجل موجود لنفس الطالب في نفس التاريخ
+    await supabase
+        .from('attendance')
+        .delete()
+        .eq('student_id', record.studentId)
+        .eq('date', date);
+
+    // إضافة السجل الجديد
     const { data, error } = await supabase
         .from('attendance')
         .insert([{
             student_id: record.studentId,
             status: record.status,
-            date: `${record.month}-${String(record.day).padStart(2, '0')}`,
+            date,
             month_key: record.month
         }])
         .select('id, created_at')
@@ -577,6 +587,103 @@ export const getAllStudentNotesWithDetails = async (limit: number = 20) => {
         console.error("Error fetching all student notes:", error);
         return [];
     }
+};
+
+// ===== سجلات متابعة المحاضرات (Student Listens) =====
+export interface ListenRecord {
+    id: string;
+    studentId: string;
+    courseId?: string;
+    date: string;
+    lecturesCount: number;
+    notes?: string;
+    createdAt?: string;
+}
+
+export const getStudentListens = async (studentId: string, courseId?: string): Promise<ListenRecord[]> => {
+    try {
+        let url = `/api/records/listens?studentId=${encodeURIComponent(studentId)}`;
+        if (courseId) url += `&courseId=${encodeURIComponent(courseId)}`;
+        const res = await fetch(url);
+        if (!res.ok) return [];
+        const data = await res.json();
+        return (data || []).map((row: any) => ({
+            id: row.id,
+            studentId: row.student_id,
+            courseId: row.course_id,
+            date: row.date,
+            lecturesCount: row.lectures_count,
+            notes: row.notes,
+            createdAt: row.created_at
+        }));
+    } catch (error) {
+        console.error("Error fetching student listens:", error);
+        return [];
+    }
+};
+
+export const getAllListens = async (monthKey?: string, periodHalf?: 1 | 2, studentIds?: string[]): Promise<ListenRecord[]> => {
+    try {
+        const params = new URLSearchParams();
+        if (monthKey) {
+            const [y, m] = monthKey.split('-').map(Number);
+            if (periodHalf === 1) {
+                params.set('startDate', `${monthKey}-01`);
+                params.set('endDate', `${monthKey}-15`);
+            } else if (periodHalf === 2) {
+                const lastDay = new Date(y, m, 0).getDate();
+                params.set('startDate', `${monthKey}-16`);
+                params.set('endDate', `${monthKey}-${String(lastDay).padStart(2, '0')}`);
+            } else {
+                const lastDay = new Date(y, m, 0).getDate();
+                params.set('startDate', `${monthKey}-01`);
+                params.set('endDate', `${monthKey}-${String(lastDay).padStart(2, '0')}`);
+            }
+        }
+        const qs = params.toString();
+        const res = await fetch(`/api/records/listens${qs ? '?' + qs : ''}`);
+        if (!res.ok) return [];
+        const data = await res.json();
+        let listens = (data || []).map((row: any) => ({
+            id: row.id,
+            studentId: row.student_id,
+            courseId: row.course_id,
+            date: row.date,
+            lecturesCount: row.lectures_count,
+            notes: row.notes,
+            createdAt: row.created_at
+        }));
+        if (studentIds && studentIds.length > 0) {
+            const idsSet = new Set(studentIds);
+            listens = listens.filter((l: any) => idsSet.has(l.studentId));
+        }
+        return listens;
+    } catch (error) {
+        console.error("Error fetching all listens:", error);
+        return [];
+    }
+};
+
+export const addListenRecord = async (record: Omit<ListenRecord, 'id'>): Promise<ListenRecord> => {
+    const { data, error } = await supabase
+        .from('student_listens')
+        .insert([{
+            student_id: record.studentId,
+            course_id: record.courseId || null,
+            date: record.date,
+            lectures_count: record.lecturesCount,
+            notes: record.notes || null
+        }])
+        .select('id, created_at')
+        .single();
+
+    if (error) throw error;
+    return { ...record, id: data.id, createdAt: data.created_at };
+};
+
+export const deleteListenRecord = async (id: string): Promise<void> => {
+    const { error } = await supabase.from('student_listens').delete().eq('id', id);
+    if (error) throw error;
 };
 
 export const markNoteAsRead = async (id: string, isRead: boolean = true) => {

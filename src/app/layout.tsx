@@ -55,6 +55,9 @@ export default function RootLayout({
   return (
     <html lang="ar" dir="rtl">
       <body className={`${cairo.variable} ${cairo.className} antialiased bg-gray-50`}>
+        <script dangerouslySetInnerHTML={{
+          __html: `if('serviceWorker' in navigator) { navigator.serviceWorker.getRegistrations().then(function(regs) { regs.forEach(function(r) { r.unregister(); }); }); }`
+        }} />
         <QueryProvider>
           <AuthProvider>
             <NetworkStatusBar />

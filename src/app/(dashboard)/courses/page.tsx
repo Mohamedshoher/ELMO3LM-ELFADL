@@ -8,9 +8,12 @@ import CourseDetailModal from '@/features/courses/components/CourseDetailModal';
 import { BookOpen, Plus, Loader2 } from 'lucide-react';
 import { FadeIn } from '@/components/ui/transition';
 import { Course } from '@/types';
+import { useAuthStore } from '@/store/useAuthStore';
 
 export default function CoursesPage() {
     const { data: courses, isLoading } = useCourses();
+    const { user } = useAuthStore();
+    const isAdmin = user?.role === 'director' || user?.role === 'supervisor';
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [editCourse, setEditCourse] = useState<Course | null>(null);
     const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
@@ -29,13 +32,15 @@ export default function CoursesPage() {
                                 <p className="text-xs text-gray-500 font-bold">{courses?.length || 0} دورة</p>
                             </div>
                         </div>
-                        <button
-                            onClick={() => setIsAddModalOpen(true)}
-                            className="h-10 px-4 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold text-sm shadow-lg shadow-purple-500/20 transition-all flex items-center gap-2"
-                        >
-                            <Plus size={18} />
-                            إضافة دورة
-                        </button>
+                        {isAdmin && (
+                            <button
+                                onClick={() => setIsAddModalOpen(true)}
+                                className="h-10 px-4 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold text-sm shadow-lg shadow-purple-500/20 transition-all flex items-center gap-2"
+                            >
+                                <Plus size={18} />
+                                إضافة دورة
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>
@@ -52,14 +57,14 @@ export default function CoursesPage() {
                                 <BookOpen size={36} className="text-purple-300" />
                             </div>
                             <h2 className="text-lg font-black text-gray-400 mb-2">لا توجد دورات بعد</h2>
-                            <p className="text-sm text-gray-400">أضف أول دورة الآن</p>
+                            {isAdmin && <p className="text-sm text-gray-400">أضف أول دورة الآن</p>}
                         </div>
                     </FadeIn>
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                         {courses.map((course) => (
                             <FadeIn key={course.id} show={true}>
-                                <CourseCard course={course} onClick={() => setSelectedCourse(course)} onEdit={() => setEditCourse(course)} />
+                                <CourseCard course={course} onClick={() => setSelectedCourse(course)} onEdit={isAdmin ? () => setEditCourse(course) : undefined} canModify={isAdmin} />
                             </FadeIn>
                         ))}
                     </div>

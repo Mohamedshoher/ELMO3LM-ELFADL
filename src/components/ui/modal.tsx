@@ -34,10 +34,17 @@ export default function Modal({ isOpen, onClose, title, children, className }: M
     useEffect(() => {
         if (!isOpen) return;
         window.history.pushState({ modalOpen: true }, '');
-        const handlePopState = () => onClose();
+        const handlePopState = (e: PopStateEvent) => {
+            if (e.state && e.state.modalOpen) {
+                onClose();
+            }
+        };
         window.addEventListener('popstate', handlePopState);
         return () => {
             window.removeEventListener('popstate', handlePopState);
+            if (window.history.state?.modalOpen) {
+                window.history.back();
+            }
         };
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isOpen]);

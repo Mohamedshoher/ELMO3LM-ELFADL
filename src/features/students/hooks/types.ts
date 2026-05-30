@@ -17,6 +17,7 @@ export interface StudentRecordsHook {
     fees: any[];
     exemptions: any[];
     notes: any[];
+    listens: any[];
     addAttendance: any;
     addExam: any;
     addFee: any;
@@ -25,4 +26,6 @@ export interface StudentRecordsHook {
     deleteFee: any;
     deleteExemption: any;
     deleteNote: any;
+    addListen: any;
+    deleteListen: any;
 }

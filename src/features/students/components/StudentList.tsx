@@ -7,6 +7,7 @@ import { useGroups } from '@/features/groups/hooks/useGroups';
 import { useUIStore } from '@/store/useUIStore';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useTeachers } from '@/features/teachers/hooks/useTeachers';
+import { useCourses } from '@/features/courses/hooks/useCourses';
 import {
     UserPlus,
     Search,
@@ -22,7 +23,9 @@ import {
     User,
     BookOpen,
     Calendar,
-    Clock
+    Clock,
+    Headphones,
+    BarChart3
 } from 'lucide-react';
 import {
     calculateTotalAbsence,
@@ -62,6 +65,25 @@ export default function StudentList({ groupId, customTitle }: StudentListProps) 
 
     const { data: students, isLoading } = useStudents(myGroupsIds);
     const { data: teachers } = useTeachers();
+    const { data: courses = [] } = useCourses();
+
+    const courseProgressMap = useMemo(() => {
+        if (!students || !groups || !courses) return {};
+        const map: Record<string, { courseName: string; progress: number; totalCompleted: number; totalRequired: number }> = {};
+        students.forEach((s: any) => {
+            const group = groups.find((g: any) => g.id === s.groupId);
+            const course = courses.find((c: any) => c.id === group?.courseId);
+            if (course) {
+                map[s.id] = {
+                    courseName: course.name,
+                    progress: s.courseCompletedAt ? 100 : 0,
+                    totalCompleted: 0,
+                    totalRequired: course.lecturesCount || 0,
+                };
+            }
+        });
+        return map;
+    }, [students, groups, courses]);
 
     const myGroups = useMemo(() => {
         if (!groups) return [];
@@ -602,13 +624,31 @@ export default function StudentList({ groupId, customTitle }: StudentListProps) 
                                         {index + 1}
                                     </span>
                                 </div>
-                                <div className="flex items-baseline gap-1.5 sm:gap-2 min-w-0 flex-1 overflow-hidden">
-                                    <h3 className="font-bold text-gray-900 leading-tight truncate whitespace-nowrap text-lg">
-                                        {student.fullName}
-                                    </h3>
-                                    <span className="text-[10px] sm:text-xs text-gray-400 font-medium shrink-0">
-                                        {getGroupName(student.groupId)}
-                                    </span>
+                                <div className="flex flex-col min-w-0 flex-1 overflow-hidden">
+                                    <div className="flex items-baseline gap-1.5 sm:gap-2">
+                                        <h3 className="font-bold text-gray-900 leading-tight truncate whitespace-nowrap text-lg">
+                                            {student.fullName}
+                                        </h3>
+                                        <span className="text-[10px] sm:text-xs text-gray-400 font-medium shrink-0">
+                                            {getGroupName(student.groupId)}
+                                        </span>
+                                    </div>
+                                    {courseProgressMap[student.id] && (
+                                        <div className="flex items-center gap-1.5 mt-0.5">
+                                            <BarChart3 size={10} className="text-purple-400 shrink-0" />
+                                            <span className="text-[9px] sm:text-[10px] text-purple-500 font-bold truncate">
+                                                {courseProgressMap[student.id].courseName}
+                                            </span>
+                                            <span className={cn(
+                                                "text-[8px] sm:text-[9px] font-black px-1.5 py-0.5 rounded-full",
+                                                courseProgressMap[student.id].progress >= 100
+                                                    ? "bg-green-50 text-green-600"
+                                                    : "bg-purple-50 text-purple-600"
+                                            )}>
+                                                {courseProgressMap[student.id].progress}%
+                                            </span>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -671,7 +711,10 @@ export default function StudentList({ groupId, customTitle }: StudentListProps) 
                                     </button>
                                 )}
                                 {user?.role === 'teacher' && (
-                                    <button onClick={(e) => { e.stopPropagation(); handleOpenModal(student, 'notes'); }} className="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-purple-600 transition-colors" title="الملاحظات"><FileText size={18} /></button>
+                                    <>
+                                        <button onClick={(e) => { e.stopPropagation(); handleOpenModal(student, 'followup'); }} className="w-8 h-8 flex items-center justify-center text-purple-500 hover:bg-white rounded-lg transition-all" title="المتابعات"><Headphones size={18} /></button>
+                                        <button onClick={(e) => { e.stopPropagation(); handleOpenModal(student, 'notes'); }} className="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-purple-600 transition-colors" title="الملاحظات"><FileText size={18} /></button>
+                                    </>
                                 )}
 
                                 {(user?.role === 'director' || user?.role === 'supervisor') && (

@@ -8,9 +8,10 @@ interface CourseCardProps {
     course: Course;
     onClick?: () => void;
     onEdit?: () => void;
+    canModify?: boolean;
 }
 
-export default function CourseCard({ course, onClick, onEdit }: CourseCardProps) {
+export default function CourseCard({ course, onClick, onEdit, canModify = true }: CourseCardProps) {
     const deleteMutation = useDeleteCourse();
 
     const handleDelete = (e: React.MouseEvent) => {
@@ -48,22 +49,24 @@ export default function CourseCard({ course, onClick, onEdit }: CourseCardProps)
                     <div className="w-12 h-12 bg-purple-50 rounded-2xl flex items-center justify-center shrink-0">
                         <BookOpen size={22} className="text-purple-600" />
                     </div>
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
-                        <button
-                            onClick={handleEditClick}
-                            className="w-8 h-8 flex items-center justify-center text-gray-300 hover:text-purple-500 hover:bg-purple-50 rounded-xl transition-all"
-                            title="تعديل الدورة"
-                        >
-                            <Pencil size={16} />
-                        </button>
-                        <button
-                            onClick={handleDelete}
-                            className="w-8 h-8 flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
-                            title="حذف الدورة"
-                        >
-                            <Trash2 size={16} />
-                        </button>
-                    </div>
+                    {canModify && (
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                            <button
+                                onClick={handleEditClick}
+                                className="w-8 h-8 flex items-center justify-center text-gray-300 hover:text-purple-500 hover:bg-purple-50 rounded-xl transition-all"
+                                title="تعديل الدورة"
+                            >
+                                <Pencil size={16} />
+                            </button>
+                            <button
+                                onClick={handleDelete}
+                                className="w-8 h-8 flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                                title="حذف الدورة"
+                            >
+                                <Trash2 size={16} />
+                            </button>
+                        </div>
+                    )}
                 </div>
 
                 <h3 className="text-base font-black text-gray-900 mb-3 line-clamp-2">{course.name}</h3>

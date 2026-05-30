@@ -15,7 +15,8 @@ export async function GET(request: NextRequest) {
             .select(`
                 id, full_name, group_id, course_registered_at, course_completed_at, course_final_grade,
                 groups!inner(name, teacher_id, teachers!left(full_name)),
-                exams!left(lectures_tested)
+                exams!left(lectures_tested),
+                student_listens!left(lectures_count)
             `)
             .eq('groups.course_id', courseId)
             .not('status', 'eq', 'archived');
@@ -26,6 +27,7 @@ export async function GET(request: NextRequest) {
 
         const result = (data || []).map((row: any) => {
             const totalTested = (row.exams || []).reduce((s: number, e: any) => s + (e.lectures_tested || 0), 0);
+            const totalListened = (row.student_listens || []).reduce((s: number, l: any) => s + (l.lectures_count || 0), 0);
             return {
                 id: row.id,
                 fullName: row.full_name,
@@ -36,6 +38,7 @@ export async function GET(request: NextRequest) {
                 courseCompletedAt: row.course_completed_at,
                 courseFinalGrade: row.course_final_grade,
                 lecturesTested: totalTested,
+                totalListened,
             };
         });
 

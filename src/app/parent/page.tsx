@@ -1,23 +1,17 @@
 "use client";
 
 import { useAuthStore } from "@/store/useAuthStore";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useStudents } from "@/features/students/hooks/useStudents";
 import { useGroups } from "@/features/groups/hooks/useGroups";
+import { useCourses } from "@/features/courses/hooks/useCourses";
 import { useStudentRecords } from "@/features/students/hooks/useStudentRecords";
 import { useTeachers } from "@/features/teachers/hooks/useTeachers";
 import { ParentChatModal } from "@/features/chat/components/ParentChatModal";
 import { ParentStudentDetailModal } from "@/features/students/components/ParentStudentDetailModal";
 import {
-    LogOut,
-    Home,
-    User as UserIcon,
-    Calendar,
-    ChevronLeft,
-    AlertCircle,
-    MessageCircle,
-    X,
-    FileText
+    LogOut, Home, User, Calendar, ChevronLeft, AlertCircle, MessageCircle, X,
+    BookOpen, TrendingUp, Clock, Award, Headphones, BarChart3, ExternalLink, Book
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { logout } from "@/features/auth/services/authService";
@@ -28,25 +22,32 @@ import { PresenceTracker } from "@/components/PresenceTracker";
 import { useChatStore } from "@/store/useChatStore";
 import { playNotificationSound } from "@/lib/notificationSound";
 import { chatService } from "@/features/chat/services/chatService";
-import { useEffect, useRef } from "react";
 
 export default function ParentDashboard() {
     const { user, setUser } = useAuthStore();
     const router = useRouter();
     const { data: students, isLoading } = useStudents();
+
+    useEffect(() => {
+        if (!user) router.replace('/parent-login');
+    }, [user, router]);
     const { data: groups } = useGroups();
+    const { data: courses } = useCourses();
+    const { data: teachers } = useTeachers();
     const { unreadCount, setConversations } = useChatStore();
-    const [selectedKidForLeave, setSelectedKidForLeave] = useState<any>(null);
-    const [selectedKidForDetail, setSelectedKidForDetail] = useState<any>(null);
+    const [mounted, setMounted] = useState(false);
+    const [selectedKid, setSelectedKid] = useState<any>(null);
+    const [showDetail, setShowDetail] = useState(false);
+    const [showLeave, setShowLeave] = useState(false);
     const [isChatOpen, setIsChatOpen] = useState(false);
     const [showPulse, setShowPulse] = useState(false);
     const prevUnreadCount = useRef(0);
-    const { data: teachers } = useTeachers();
+
+    useEffect(() => { setMounted(true); }, []);
 
     const parentPhone = user?.displayName || "";
     const myKids = students?.filter(s => s.parentPhone === parentPhone) || [];
 
-    // ✨ الاستماع للمحادثات وتحديث العداد
     useEffect(() => {
         if (!user?.uid) return;
         const userId = user.uid.replace('mock-', '');
@@ -56,7 +57,6 @@ export default function ParentDashboard() {
         return () => unsubscribe();
     }, [user?.uid, setConversations]);
 
-    // ✨ تشغيل الصوت والتأثير عند وصول رسالة جديدة
     useEffect(() => {
         if (unreadCount > prevUnreadCount.current && prevUnreadCount.current >= 0) {
             playNotificationSound();
@@ -66,177 +66,135 @@ export default function ParentDashboard() {
         prevUnreadCount.current = unreadCount;
     }, [unreadCount]);
 
-    // تصفية جهات الاتصال المسموح بالتواصل معها (المدير والمشرف ومدرسي الأبناء فقط)
     const allowedContacts = teachers?.filter(t => {
-        // 1. المدير والمشرف متاحون دائماً
         if (t.role === 'supervisor') return true;
-        // 2. مدرسو المجموعات التي ينتمي إليها الأبناء
         const kidTeacherIds = myKids.map(k => k.groupId).map(gid => groups?.find(g => g.id === gid)?.teacherId);
         if (kidTeacherIds.includes(t.id)) return true;
         return false;
     }) || [];
 
-    // إضافة المدير كجهة اتصال يدوية (بافتراض وجود مدير عام للنظام)
     const contacts = [
         { id: 'director', fullName: 'المدير العام', role: 'director' },
         ...allowedContacts
     ];
 
-    // دالة تسجيل الخروج ومسح بيانات الجلسة
     const handleLogout = async () => {
         await logout();
         setUser(null);
         router.push("/login");
     };
 
-    // حالة التحميل الأولية
-    if (isLoading) {
+    if (isLoading || !mounted) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 via-white to-teal-50">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="w-12 h-12 border-4 border-emerald-200 border-t-emerald-500 rounded-full animate-spin" />
+                    <p className="text-emerald-600 font-bold text-sm">جاري التحميل...</p>
+                </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-gray-50/50 font-sans pb-32" dir="rtl">
+        <div className="min-h-screen bg-gray-50 pb-28" dir="rtl">
             <PresenceTracker />
-            {/* رأس الصفحة الثابت - مرن مع الحاوية */}
-            <header className="bg-white/80 backdrop-blur-md border-b border-gray-100 sticky top-0 z-50">
-                <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 h-16 flex items-center justify-between relative">
-                    {/* الجانب الأيمن: زر تسجيل الخروج */}
-                    <button
-                        onClick={handleLogout}
-                        className="flex items-center gap-2 px-4 py-2.5 bg-red-50 text-red-600 rounded-2xl text-[11px] md:text-xs font-black hover:bg-red-600 hover:text-white transition-all shadow-sm active:scale-95 shrink-0"
-                    >
-                        <LogOut size={16} />
-                        <span className="hidden xs:inline">تسجيل خروج</span>
+
+            <header className="bg-white/70 backdrop-blur-xl border-b border-gray-100 sticky top-0 z-50">
+                <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
+                    <button onClick={handleLogout}
+                        className="flex items-center gap-2 px-3.5 py-2 bg-red-50 text-red-500 rounded-xl text-[11px] font-black hover:bg-red-500 hover:text-white transition-all active:scale-95">
+                        <LogOut size={15} />
+                        <span className="hidden xs:inline">خروج</span>
                     </button>
 
-                    {/* المنتصف: شعار المركز */}
-                    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
-                        <div className="bg-white w-12 h-12 md:w-14 md:h-14 rounded-2xl flex items-center justify-center shadow-lg border border-gray-50">
-                            <img src="/icon-192.png" alt="شعار المركز" className="w-8 h-8 md:w-10 md:h-10 object-contain" />
+                    <div className="flex items-center gap-2">
+                        <div className="w-9 h-9 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-md">
+                            <Home size={16} className="text-white" />
                         </div>
                     </div>
 
-                    {/* الجانب الأيسر: أزرار التنقل السريع */}
-                    <div className="flex items-center gap-2 shrink-0">
-                        <button
-                            onClick={() => setIsChatOpen(true)}
-                            className={cn(
-                                "relative flex items-center gap-2 px-4 py-2.5 bg-indigo-50 text-indigo-600 rounded-2xl text-[11px] md:text-xs font-black hover:bg-indigo-600 hover:text-white transition-all active:scale-95",
-                                showPulse && "animate-bounce"
-                            )}
-                        >
-                            <MessageCircle size={16} />
-                            <span className="hidden sm:inline">المراسلة</span>
-                            {unreadCount > 0 && (
-                                <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] flex items-center justify-center rounded-full border-2 border-white animate-pulse">
-                                    {unreadCount > 9 ? '+9' : unreadCount}
-                                </span>
-                            )}
-                        </button>
-                        <button className="flex items-center gap-2 px-4 py-2.5 bg-blue-50 text-blue-600 rounded-2xl text-[11px] md:text-xs font-black hover:bg-blue-600 hover:text-white transition-all active:scale-95">
-                            <Home size={16} />
-                            <span className="hidden sm:inline">الرئيسية</span>
-                        </button>
-                    </div>
+                    <button onClick={() => setIsChatOpen(true)}
+                        className={cn("relative flex items-center gap-2 px-3.5 py-2 bg-emerald-50 text-emerald-600 rounded-xl text-[11px] font-black hover:bg-emerald-600 hover:text-white transition-all active:scale-95", showPulse && "animate-bounce")}>
+                        <MessageCircle size={15} />
+                        <span className="hidden sm:inline">مراسلة</span>
+                        {unreadCount > 0 && (
+                            <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white text-[9px] flex items-center justify-center rounded-full border-2 border-white animate-pulse">
+                                {unreadCount > 9 ? '+9' : unreadCount}
+                            </span>
+                        )}
+                    </button>
                 </div>
             </header>
 
-            <main className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-8 md:py-12">
-                {/* قسم رسالة الترحيب بولي الأمر - خطوط مرنة */}
-                <div className="mb-12 md:mb-16 text-center sm:text-right">
-                    <h2 className="text-3xl md:text-5xl lg:text-6xl font-black text-gray-900 leading-tight">
+            <main className="max-w-5xl mx-auto px-4 py-6">
+                {/* Welcome */}
+                <div className="mb-8">
+                    <h1 className="text-2xl md:text-3xl font-black text-gray-900">
                         {myKids.length > 0
-                            ? `مرحباً ولي أمر ${myKids.map(k => k.fullName.split(' ')[0]).join(' و ')} 👋`
-                            : "مرحباً بك ولي أمرنا العزيز 👋"}
-                    </h2>
-                    <p className="text-base md:text-xl text-gray-400 font-bold mt-4 max-w-2xl">
-                        نسعد بمتابعتك المستمرة لرحلة أبنائك التعليمية في المعلم الفاضل وتطورهم في حفظ القرآن الكريم.
-                    </p>
+                            ? `أهلاً بك يا ${myKids.map(k => k.fullName.split(' ')[0]).join(' و ')}`
+                            : "أهلاً بك"}
+                    </h1>
+                    <p className="text-sm text-gray-400 font-bold mt-1">نظام متابعة الدورات والاختبارات</p>
                 </div>
 
-                {/* عنوان القسم والشبكة المرنة */}
-                <div className="flex items-center justify-between mb-8">
-                    <div className="flex items-center gap-3 border-r-4 border-teal-500 pr-4">
-                        <h1 className="text-xl md:text-2xl font-black text-gray-700 uppercase tracking-wide">أبنائي الطلاب</h1>
-                        <span className="bg-teal-50 text-teal-600 px-3 py-1 rounded-full text-xs font-black">
-                            {myKids.length} سجلات
-                        </span>
-                    </div>
+                {/* Course Title */}
+                <div className="flex items-center gap-3 mb-6 border-r-4 border-emerald-500 pr-3">
+                    <BookOpen size={20} className="text-emerald-600" />
+                    <h2 className="text-xl font-black text-gray-800">دوراتي</h2>
+                    <span className="bg-emerald-50 text-emerald-600 px-2.5 py-0.5 rounded-full text-[10px] font-black">
+                        {myKids.length}
+                    </span>
                 </div>
 
-                {/* شبكة توزيع البطاقات: عمود في الهاتف، عمودين في التابلت، 3 في الكمبيوتر */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+                <div className="grid grid-cols-1 gap-6">
                     {myKids.map((kid) => (
                         <StudentCard
                             key={kid.id}
                             kid={kid}
                             groups={groups || []}
+                            courses={courses || []}
                             teachers={teachers || []}
-                            onSelect={() => setSelectedKidForDetail(kid)}
-                            onLeaveRequest={() => setSelectedKidForLeave(kid)}
+                            onSelect={() => { setSelectedKid(kid); setShowDetail(true); }}
+                            onLeaveRequest={() => { setSelectedKid(kid); setShowLeave(true); }}
                         />
                     ))}
 
-                    {/* حالة عدم وجود طلاب */}
                     {myKids.length === 0 && (
-                        <div className="col-span-full py-24 text-center space-y-6">
-                            <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto text-gray-400 shadow-inner">
-                                <AlertCircle size={48} />
+                        <div className="col-span-full py-24 text-center">
+                            <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <AlertCircle size={40} className="text-gray-300" />
                             </div>
-                            <div>
-                                <h3 className="text-2xl font-bold text-gray-600">عذراً، لا توجد بيانات</h3>
-                                <p className="text-gray-400 mt-2">لم نجد طلاباً مرتبطين بهذا الرقم في قاعدة البيانات.</p>
-                            </div>
+                            <h3 className="text-xl font-black text-gray-400 mb-1">لا توجد بيانات</h3>
+                            <p className="text-sm text-gray-300 font-bold">لم نجد طلاباً مرتبطين بهذا الرقم</p>
                         </div>
                     )}
                 </div>
             </main>
 
-            {/* نافذة تفاصيل الطالب المنبثقة */}
-            {selectedKidForDetail && (
+            {showDetail && selectedKid && (
                 <ParentStudentDetailModal
-                    isOpen={!!selectedKidForDetail}
-                    onClose={() => setSelectedKidForDetail(null)}
-                    student={selectedKidForDetail}
-                    group={groups?.find(g => g.id === selectedKidForDetail.groupId)}
-                    teacher={teachers?.find(t => t.id === groups?.find(g => g.id === selectedKidForDetail.groupId)?.teacherId)}
+                    isOpen={showDetail}
+                    onClose={() => setShowDetail(false)}
+                    student={selectedKid}
+                    group={groups?.find(g => g.id === selectedKid.groupId)}
+                    teacher={teachers?.find(t => t.id === groups?.find(g => g.id === selectedKid.groupId)?.teacherId)}
                 />
             )}
 
-            {/* نافذة طلب الإجازة المنبثقة */}
-            {selectedKidForLeave && (
-                <LeaveRequestModal
-                    kid={selectedKidForLeave}
-                    onClose={() => setSelectedKidForLeave(null)}
-                />
+            {showLeave && selectedKid && (
+                <LeaveRequestModal kid={selectedKid} onClose={() => setShowLeave(false)} />
             )}
 
-            {/* نافذة المراسلة المنبثقة */}
             {isChatOpen && (
-                <ParentChatModal
-                    isOpen={isChatOpen}
-                    onClose={() => setIsChatOpen(false)}
-                    contacts={contacts}
-                />
+                <ParentChatModal isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} contacts={contacts} />
             )}
 
-            {/* زر المراسلة الداخلية العائم */}
-            <button
-                onClick={() => setIsChatOpen(true)}
-                className={cn(
-                    "fixed bottom-10 left-6 w-16 h-16 bg-indigo-600 text-white rounded-full shadow-2xl flex items-center justify-center z-40 active:scale-90 transition-all hover:bg-indigo-700 hover:rotate-12",
-                    showPulse && "animate-bounce shadow-indigo-500/50"
-                )}
-                title="المراسلة الداخلية"
-            >
+            <button onClick={() => setIsChatOpen(true)}
+                className={cn("fixed bottom-6 left-6 w-14 h-14 bg-gradient-to-br from-emerald-500 to-teal-600 text-white rounded-full shadow-2xl flex items-center justify-center z-40 active:scale-90 transition-all hover:shadow-emerald-500/40 hover:scale-110", showPulse && "animate-bounce")}>
                 <div className="relative">
-                    <MessageCircle size={32} />
+                    <MessageCircle size={28} />
                     {unreadCount > 0 && (
-                        <span className="absolute -top-2 -right-2 w-7 h-7 bg-red-500 text-white text-xs flex items-center justify-center rounded-full border-2 border-white font-black shadow-lg">
+                        <span className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white text-[10px] flex items-center justify-center rounded-full border-2 border-white font-black shadow-lg">
                             {unreadCount > 99 ? '99+' : unreadCount}
                         </span>
                     )}
@@ -246,33 +204,21 @@ export default function ParentDashboard() {
     );
 }
 
-/**
- * مكون منبثق لتقديم طلب إجازة
- */
 function LeaveRequestModal({ kid, onClose }: { kid: any, onClose: () => void }) {
     const { addLeave } = useStudentRecords(kid.id);
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
     const [reason, setReason] = useState('');
 
-    // معالجة إرسال الطلب
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!startDate || !endDate || !reason) return alert('يرجى ملء جميع الحقول');
-
         try {
             await addLeave.mutateAsync({
-                studentId: kid.id,
-                studentName: kid.fullName,
-                startDate,
-                endDate,
-                reason
+                studentId: kid.id, studentName: kid.fullName, startDate, endDate, reason
             });
             onClose();
-        } catch (err) {
-            console.error("خطأ أثناء إرسال طلب الإجازة:", err);
-            // يتم التعامل مع الأخطاء برمجياً في خدمة السجلات لضمان تجربة مستخدم سلسة
-        }
+        } catch (err) { console.error("خطأ:", err); }
     };
 
     return (
@@ -280,56 +226,37 @@ function LeaveRequestModal({ kid, onClose }: { kid: any, onClose: () => void }) 
             <FadeIn show={true}>
                 <div onClick={onClose} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
             </FadeIn>
-            <SlideIn show={true} className="bg-white rounded-[40px] w-full max-w-md p-8 relative z-10 shadow-2xl">
-                <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-xl font-black text-gray-900 border-r-4 border-orange-500 pr-3">طلب إجازة</h2>
-                    <button onClick={onClose} className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400">
-                        <X size={20} />
+            <SlideIn show={true} className="bg-white rounded-3xl w-full max-w-md p-6 relative z-10 shadow-2xl">
+                <div className="flex items-center justify-between mb-5">
+                    <h2 className="text-lg font-black text-gray-900 border-r-4 border-emerald-500 pr-3">طلب إجازة</h2>
+                    <button onClick={onClose} className="w-9 h-9 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400">
+                        <X size={18} />
                     </button>
                 </div>
-
-                <div className="mb-6">
-                    <p className="text-xs text-gray-400 font-bold mb-1">الطالب:</p>
-                    <p className="font-black text-gray-900">{kid.fullName}</p>
+                <div className="bg-gradient-to-l from-emerald-50 to-teal-50 rounded-2xl p-4 mb-5 border border-emerald-100/50">
+                    <p className="text-[10px] text-emerald-600/60 font-bold mb-0.5">الطالب</p>
+                    <p className="font-black text-gray-800 text-sm">{kid.fullName}</p>
                 </div>
-
                 <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-1">
+                    <div className="grid grid-cols-2 gap-3">
+                        <div>
                             <label className="text-[10px] font-bold text-gray-400 mr-1">من تاريخ</label>
-                            <input
-                                type="date"
-                                value={startDate}
-                                onChange={(e) => setStartDate(e.target.value)}
-                                className="w-full h-12 bg-gray-50 border border-gray-100 rounded-2xl px-4 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-orange-500/20"
-                            />
+                            <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)}
+                                className="w-full h-11 bg-gray-50 border border-gray-100 rounded-2xl px-3 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500/20" />
                         </div>
-                        <div className="space-y-1">
+                        <div>
                             <label className="text-[10px] font-bold text-gray-400 mr-1">إلى تاريخ</label>
-                            <input
-                                type="date"
-                                value={endDate}
-                                onChange={(e) => setEndDate(e.target.value)}
-                                className="w-full h-12 bg-gray-50 border border-gray-100 rounded-2xl px-4 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-orange-500/20"
-                            />
+                            <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)}
+                                className="w-full h-11 bg-gray-50 border border-gray-100 rounded-2xl px-3 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500/20" />
                         </div>
                     </div>
-
-                    <div className="space-y-1">
+                    <div>
                         <label className="text-[10px] font-bold text-gray-400 mr-1">السبب</label>
-                        <textarea
-                            value={reason}
-                            onChange={(e) => setReason(e.target.value)}
-                            placeholder="اكتب سبب الإجازة هنا..."
-                            className="w-full h-24 bg-gray-50 border border-gray-100 rounded-2xl p-4 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-orange-500/20"
-                        />
+                        <textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder="اكتب سبب الإجازة..."
+                            className="w-full h-22 bg-gray-50 border border-gray-100 rounded-2xl p-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500/20" />
                     </div>
-
-                    <Button
-                        type="submit"
-                        disabled={addLeave.isPending}
-                        className="w-full h-14 bg-orange-600 hover:bg-orange-700 text-white rounded-2xl font-black text-lg shadow-xl shadow-orange-500/20"
-                    >
+                    <Button type="submit" disabled={addLeave.isPending}
+                        className="w-full h-12 bg-gradient-to-l from-emerald-500 to-teal-600 text-white rounded-2xl font-black text-sm shadow-xl shadow-emerald-500/20">
                         {addLeave.isPending ? 'جاري الإرسال...' : 'إرسال الطلب'}
                     </Button>
                 </form>
@@ -338,93 +265,130 @@ function LeaveRequestModal({ kid, onClose }: { kid: any, onClose: () => void }) 
     );
 }
 
-/**
- * مكون بطاقة عرض الطالب المختصرة
- */
-function StudentCard({ kid, groups, teachers, onSelect, onLeaveRequest }: { kid: any, groups: any[], teachers: any[], onSelect: () => void, onLeaveRequest: () => void }) {
-    const { attendance, exams, fees } = useStudentRecords(kid.id);
+function StudentCard({ kid, groups, courses: allCourses, teachers, onSelect, onLeaveRequest }: {
+    kid: any, groups: any[], courses: any[], teachers: any[], onSelect: () => void, onLeaveRequest: () => void
+}) {
+    const { attendance, exams, fees, listens } = useStudentRecords(kid.id);
     const group = groups.find(g => g.id === kid.groupId);
     const teacher = teachers.find(t => t.id === group?.teacherId);
+    const course = allCourses.find((c: any) => c.id === group?.courseId);
 
-    const presentCount = attendance.filter(a => a.status === 'present').length;
+    const presentCount = attendance.filter((a: any) => a.status === 'present').length;
     const totalAttendance = attendance.length;
-
-    // التحقق من وجود مصروفات غير مدفوعة
-    const hasUnpaidFees = fees.length === 0;
+    const attendanceRate = totalAttendance > 0 ? Math.round((presentCount / totalAttendance) * 100) : 0;
+    const totalListened = listens?.reduce((s: any, l: any) => s + (l.lecturesCount || 0), 0) || 0;
+    const totalLectures = course?.lecturesCount || 0;
+    const progress = totalLectures > 0 ? Math.min(Math.round((totalListened / totalLectures) * 100), 100) : 0;
+    const courseExams = exams.filter((e: any) => e.type !== 'quran');
+    const avgGrade = courseExams.length > 0
+        ? Math.round(courseExams.reduce((s: any, e: any) => s + Number(e.grade || 0), 0) / courseExams.length)
+        : 0;
 
     return (
-        <div
-            onClick={onSelect}
-            className="bg-white rounded-3xl md:rounded-[40px] p-4 md:p-6 shadow-sm border border-gray-100 hover:shadow-2xl hover:shadow-blue-500/10 transition-all group relative overflow-hidden cursor-pointer active:scale-[0.98]"
-        >
-            {/* زخرفة خلفية للبطاقة */}
-            <div className="absolute top-0 right-0 w-24 h-24 md:w-32 md:h-32 bg-blue-500/5 rounded-bl-[100px] -mr-10 -mt-10 group-hover:scale-110 transition-transform" />
+        <div onClick={onSelect}
+            className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 hover:shadow-xl hover:shadow-emerald-500/5 transition-all group relative overflow-hidden cursor-pointer active:scale-[0.98]">
+            <div className="absolute top-0 right-0 w-48 h-48 bg-emerald-500/5 rounded-bl-[120px] -mr-16 -mt-16 group-hover:scale-125 transition-transform" />
 
-            {/* علامات الحالة (مفصول / سداد رسوم) */}
-            <div className="absolute top-4 md:top-6 left-4 md:left-6 z-10 flex flex-col gap-1 md:gap-2 items-end">
+            <div className="absolute top-3 left-3 z-10">
                 {kid.status === 'archived' && (
-                    <div className="bg-red-500 text-white px-2 md:px-3 py-1 rounded-full text-[8px] md:text-[9px] font-black shadow-lg border border-white/20">
-                        مفصول لحين مراجعة الإدارة
-                    </div>
-                )}
-                {hasUnpaidFees && (
-                    <div className="bg-orange-500 text-white px-2 md:px-3 py-1 rounded-full text-[8px] md:text-[9px] font-black shadow-lg border border-white/20">
-                        لحين سداد الرسوم
-                    </div>
+                    <span className="bg-red-500 text-white px-2.5 py-0.5 rounded-full text-[8px] font-black shadow-lg border border-white/20">
+                        مفصول
+                    </span>
                 )}
             </div>
 
-            <div className="flex flex-col items-center text-center space-y-3 md:space-y-4 relative z-10">
-                {/* أيقونة الطالب */}
-                <div className="w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl md:rounded-[30px] flex items-center justify-center text-white shadow-xl shadow-blue-500/20 group-hover:rotate-6 transition-transform">
-                    <UserIcon size={28} className="md:w-10 md:h-10" />
-                </div>
-
-                <div>
-                    <h2 className="text-lg md:text-xl font-black text-gray-900 mb-1 group-hover:text-blue-600 transition-colors uppercase tracking-tight truncate max-w-[200px]">{kid.fullName}</h2>
-                    <div className="flex items-center justify-center flex-wrap gap-1.5 md:gap-2 text-[9px] md:text-[10px] font-bold">
-                        <div className="flex items-center gap-1 md:gap-1.5 text-teal-600 bg-teal-50 px-2 py-0.5 rounded-full border border-teal-100">
-                            <span className="w-1 md:w-1.5 h-1 md:h-1.5 rounded-full bg-teal-500" />
-                            {group?.name || "بدون مجموعة"}
-                        </div>
-                        {teacher && (
-                            <span className="text-gray-400 text-[8px] md:text-[9px]">بإشراف أ/ {teacher.fullName}</span>
-                        )}
+            <div className="relative z-10">
+                {/* Student Header */}
+                <div className="flex items-center gap-4 mb-5">
+                    <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-emerald-500/20 group-hover:rotate-6 transition-transform shrink-0">
+                        <User size={28} />
                     </div>
-                </div>
-
-                {/* إحصائيات سريعة (حضور واختبارات) */}
-                <div className="grid grid-cols-2 gap-3 md:gap-4 w-full pt-2 md:pt-4">
-                    <div className="bg-gray-50/80 p-3 md:p-4 rounded-2xl md:rounded-3xl border border-gray-100 group-hover:bg-white group-hover:shadow-inner transition-all">
-                        <p className="text-[9px] md:text-[10px] text-gray-400 font-black mb-1">الحضور</p>
-                        <div className="flex items-baseline justify-center gap-1">
-                            <span className="text-lg md:text-xl font-black text-gray-900">{presentCount}</span>
-                            <span className="text-[8px] md:text-[10px] text-gray-400 font-bold">/ {totalAttendance || 0}</span>
-                        </div>
-                    </div>
-                    <div className="bg-gray-50/80 p-3 md:p-4 rounded-2xl md:rounded-3xl border border-gray-100 group-hover:bg-white group-hover:shadow-inner transition-all">
-                        <p className="text-[9px] md:text-[10px] text-gray-400 font-black mb-1">الاختبارات</p>
-                        <div className="flex items-baseline justify-center gap-1">
-                            <span className="text-lg md:text-xl font-black text-gray-900">{exams.length}</span>
-                            <span className="text-[8px] md:text-[10px] text-gray-400 font-bold">سجلات</span>
+                    <div className="min-w-0 flex-1">
+                        <h3 className="font-black text-gray-900 text-lg">{kid.fullName}</h3>
+                        <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-100">
+                                <span className="w-1 h-1 rounded-full bg-emerald-500" />
+                                {group?.name || "بدون مجموعة"}
+                            </span>
+                            {teacher && (
+                                <span className="text-[10px] text-gray-400 font-bold">أ/ {teacher.fullName}</span>
+                            )}
                         </div>
                     </div>
                 </div>
 
-                {/* أزرار الإجراءات السريعة */}
-                <div className="flex items-center gap-2 md:gap-3 w-full pt-1 md:pt-2">
-                    <div className="flex-1 h-11 md:h-12 bg-blue-600 text-white shadow-lg shadow-blue-500/20 text-xs md:text-sm font-black rounded-xl md:rounded-2xl flex items-center justify-center gap-1.5 md:gap-2 hover:bg-blue-700 transition-all">
-                        التفاصيل
-                        <ChevronLeft size={14} className="md:w-4 md:h-4" />
+                {/* Course Card */}
+                {course ? (
+                    <div className="bg-gradient-to-l from-emerald-50 to-teal-50 rounded-2xl p-4 border border-emerald-100/50 mb-4">
+                        <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2">
+                                <BookOpen size={16} className="text-emerald-600" />
+                                <span className="font-black text-gray-800 text-sm">{course.name}</span>
+                            </div>
+                            <span className={cn(
+                                "px-2.5 py-0.5 rounded-full text-[9px] font-black",
+                                progress >= 100 ? "bg-emerald-500 text-white" : "bg-emerald-100 text-emerald-700"
+                            )}>
+                                {progress >= 100 ? 'مكتملة' : `${progress}%`}
+                            </span>
+                        </div>
+                        <div className="w-full h-2 bg-emerald-200/50 rounded-full overflow-hidden">
+                            <div className="h-full bg-gradient-to-l from-emerald-500 to-teal-600 rounded-full transition-all"
+                                style={{ width: `${progress}%` }} />
+                        </div>
+                        <div className="flex items-center justify-between mt-2 text-[9px] text-gray-400 font-bold">
+                            <span>المستمع: {totalListened}</span>
+                            <span>المحاضرات: {totalLectures}</span>
+                        </div>
                     </div>
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onLeaveRequest();
-                        }}
-                        className="h-11 md:h-12 w-24 md:w-28 bg-orange-50 text-orange-600 text-[10px] md:text-xs font-black rounded-xl md:rounded-2xl flex items-center justify-center gap-1.5 md:gap-2 active:scale-95 transition-all hover:bg-orange-600 hover:text-white border border-orange-100"
-                    >
-                        <Calendar size={12} className="md:w-3.5 md:h-3.5" />
+                ) : (
+                    <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100 mb-4 text-center">
+                        <p className="text-xs font-bold text-gray-400">غير مسجل في دورة</p>
+                    </div>
+                )}
+
+                {/* Stats */}
+                <div className="grid grid-cols-4 gap-2 mb-4">
+                    <div className="bg-gray-50/80 rounded-2xl p-3 text-center border border-gray-100">
+                        <Calendar size={14} className="mx-auto text-emerald-500 mb-1" />
+                        <p className="text-base font-black text-gray-900">{attendanceRate}%</p>
+                        <p className="text-[7px] text-gray-400 font-bold">حضور</p>
+                    </div>
+                    <div className="bg-gray-50/80 rounded-2xl p-3 text-center border border-gray-100">
+                        <Award size={14} className="mx-auto text-amber-500 mb-1" />
+                        <p className="text-base font-black text-gray-900">{courseExams.length}</p>
+                        <p className="text-[7px] text-gray-400 font-bold">اختبارات</p>
+                    </div>
+                    <div className="bg-gray-50/80 rounded-2xl p-3 text-center border border-gray-100">
+                        <Headphones size={14} className="mx-auto text-blue-500 mb-1" />
+                        <p className="text-base font-black text-gray-900">{listens?.length || 0}</p>
+                        <p className="text-[7px] text-gray-400 font-bold">متابعات</p>
+                    </div>
+                    <div className="bg-gray-50/80 rounded-2xl p-3 text-center border border-gray-100">
+                        <BarChart3 size={14} className="mx-auto text-purple-500 mb-1" />
+                        <p className="text-base font-black text-gray-900">{progress}%</p>
+                        <p className="text-[7px] text-gray-400 font-bold">تقدم</p>
+                    </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center gap-2">
+                    <button onClick={(e) => { e.stopPropagation(); onSelect(); }}
+                        className="flex-1 h-11 bg-gradient-to-l from-emerald-500 to-teal-600 text-white text-xs font-black rounded-2xl flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 transition-all active:scale-95">
+                        عرض التفاصيل
+                        <ChevronLeft size={14} />
+                    </button>
+                    {course?.link && (
+                        <a href={course.link} target="_blank" rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="h-11 px-4 bg-white text-gray-600 text-[10px] font-black rounded-2xl flex items-center justify-center gap-1.5 active:scale-95 transition-all hover:bg-emerald-50 hover:text-emerald-600 border border-gray-100">
+                            <ExternalLink size={13} />
+                            الرابط
+                        </a>
+                    )}
+                    <button onClick={(e) => { e.stopPropagation(); onLeaveRequest(); }}
+                        className="h-11 px-4 bg-orange-50 text-orange-600 text-[10px] font-black rounded-2xl flex items-center justify-center gap-1.5 active:scale-95 transition-all hover:bg-orange-500 hover:text-white border border-orange-100">
+                        <Calendar size={12} />
                         إجازة
                     </button>
                 </div>
@@ -432,4 +396,3 @@ function StudentCard({ kid, groups, teachers, onSelect, onLeaveRequest }: { kid:
         </div>
     );
 }
-

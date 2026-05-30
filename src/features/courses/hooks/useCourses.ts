@@ -1,10 +1,15 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getCourses, addCourse, updateCourse, deleteCourse } from '../services/courseService';
+import { useAuthStore } from '@/store/useAuthStore';
 
 export const useCourses = () => {
+    const { user } = useAuthStore();
+    const isAllowed = user?.role === 'director' || user?.role === 'supervisor' || user?.role === 'parent';
+
     return useQuery({
         queryKey: ['courses'],
-        queryFn: () => getCourses()
+        queryFn: () => isAllowed ? getCourses() : [],
+        enabled: isAllowed
     });
 };
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { X, Calendar, CreditCard, BookOpen, FileText, Clock, Award } from 'lucide-react';
+import { X, Calendar, CreditCard, BookOpen, FileText, Clock, Award, Headphones } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import { useStudents } from '../hooks/useStudents';
 import { useStudentRecords } from '../hooks/useStudentRecords';
@@ -15,8 +15,9 @@ import FeesTab from './FeesTab';
 import ExamsTab from './ExamsTab';
 
 const ScheduleTab = dynamic(() => import('./ScheduleTab'), { ssr: false });
-const CoursesTab = dynamic(() => import('./CoursesTab'), { ssr: false });
+import CoursesTab from './CoursesTab';
 import NotesTab from './NotesTab';
+import FollowUpTab from './FollowUpTab';
 import { useGroups } from '@/features/groups/hooks/useGroups';
 import { FadeIn, SlideIn } from '@/components/ui/transition';
 
@@ -52,13 +53,20 @@ export default function StudentDetailModal({
     // دعم زر الرجوع في الهاتف لإغلاق المودال
     useEffect(() => {
         if (!isOpen) return;
-
         window.history.pushState({ studentModalOpen: true }, '');
-        const handlePopState = () => onClose();
+        const handlePopState = (e: PopStateEvent) => {
+            if (e.state && e.state.studentModalOpen) {
+                onClose();
+            }
+        };
         window.addEventListener('popstate', handlePopState);
 
         return () => {
             window.removeEventListener('popstate', handlePopState);
+            // إزالة حالة التاريخ المضافة عند إغلاق المودال من الزر وليس من الرجوع
+            if (window.history.state?.studentModalOpen) {
+                window.history.back();
+            }
         };
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isOpen]);
@@ -72,6 +80,7 @@ export default function StudentDetailModal({
         { id: 'attendance', label: 'سجل الحضور', icon: Calendar },
         { id: 'schedule', label: 'مواعيد الحضور', icon: Clock },
         { id: 'courses', label: 'الدورات', icon: Award },
+        { id: 'followup', label: 'المتابعات', icon: Headphones },
         { id: 'exams', label: 'سجل الاختبارات', icon: BookOpen },
         { id: 'fees', label: 'سجل المصروفات', icon: CreditCard },
         { id: 'notes', label: 'سجل الملحوظات', icon: FileText },
@@ -115,6 +124,7 @@ export default function StudentDetailModal({
                     {activeTab === 'exams' && <ExamsTab student={student} records={studentRecords} />}
                     {activeTab === 'notes' && <NotesTab student={student} records={studentRecords} />}
                     {activeTab === 'courses' && <CoursesTab student={student} />}
+                    {activeTab === 'followup' && <FollowUpTab student={student} records={studentRecords} />}
                 </div>
             </SlideIn>
         </>

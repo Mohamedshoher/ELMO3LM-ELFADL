@@ -12,7 +12,11 @@ import {
     User,
     AlertCircle,
     Calendar,
-    MessageCircle
+    MessageCircle,
+    Headphones,
+    BookOpen,
+    BarChart3,
+    Book
 } from 'lucide-react';
 import { cn, getWhatsAppUrl } from '@/lib/utils';
 import { FadeIn } from '@/components/ui/transition';
@@ -25,17 +29,15 @@ import { useAuthStore } from '@/store/useAuthStore';
 
 import dynamic from 'next/dynamic';
 import { useAllExams } from '@/features/students/hooks/useAllExams';
+import { useAllListens } from '@/features/students/hooks/useAllListens';
+import { useCourses } from '@/features/courses/hooks/useCourses';
 
 const StudentDetailModal = dynamic(() => import('@/features/students/components/StudentDetailModal'), { ssr: false });
 
 // --- تعريف الأنواع والقواميس المساعدة ---
-type TabType = 'notTested' | 'mostTested' | 'performance';
+type TabType = 'notTested' | 'mostTested' | 'performance' | 'followUp';
 
-const EXAM_TYPE_MAP: Record<string, string> = {
-    'new': 'جديد',
-    'near': 'ماضي قريب',
-    'far': 'ماضي بعيد'
-};
+
 
 export default function ExamsReportPage() {
     // --- 1. جلب البيانات الأساسية من الـ Hooks ---
@@ -63,12 +65,7 @@ export default function ExamsReportPage() {
     // --- 3. حالات الصفحة (State Management) ---
     const [activeTab, setActiveTab] = useState<TabType>('performance'); // التبويب النشط
     const [selectedGroupId, setSelectedGroupId] = useState('all'); // المجموعة المختارة للفلترة
-    const [selectedExamType, setSelectedExamType] = useState('new'); // نوع الاختبار (جديد، قريب، بعيد)
     const [examsLimit, setExamsLimit] = useState('1'); // الحد الأدنى للاختبارات (لتبويب الأكثر اختباراً)
-    const [performanceFilter, setPerformanceFilter] = useState<'all' | 'new' | 'near' | 'far'>('all'); // فلتر تبويب الأداء
-    const [performanceTypeFilter, setPerformanceTypeFilter] = useState<'all' | 'quran' | 'talqeen' | 'noor'>('all'); // فلتر نوع المجموعة
-
-    const [selectedRemainingCount, setSelectedRemainingCount] = useState('all'); // فلتر عدد الاختبارات المتبقية (3، 2، 1)
 
     // --- 4. إدارة الوقت والتاريخ ---
     const [selectedDate, setSelectedDate] = useState(new Date()); // التاريخ المختار للتقارير الشهرية
@@ -78,6 +75,8 @@ export default function ExamsReportPage() {
     // تحويل التاريخ إلى مفتاح (مثل 2023-10) لجلب بيانات الاختبارات من السيرفر
     const monthKey = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}`;
     const { data: allExams = [] } = useAllExams(monthKey, selectedHalf, relevantStudentIds);
+    const { data: allListens = [] } = useAllListens(monthKey, selectedHalf, relevantStudentIds);
+    const { data: courses = [] } = useCourses();
 
     // تسميات الشهور باللغة العربية
     const currentMonthLabel = selectedDate.toLocaleDateString('ar-EG', { month: 'long' });
@@ -103,8 +102,30 @@ export default function ExamsReportPage() {
 
     // --- 5. منطق حساب البيانات (Business Logic) باستخدام useMemo لتحسين الأداء ---
 
-    // أ- حساب الطلاب الذين "لم يختبروا" هذا الشهر بناءً على الفلاتر
-    const notTestedStudents = useMemo(() => {
+
+
+    // --- دالة مساعدة لحساب تقدم الطالب في الدورة ---
+    const getStudentCourseProgress = useMemo(() => {
+        return (student: any) => {
+            const group = groups?.find((g: any) => g.id === student.groupId);
+            const course = courses?.find((c: any) => c.id === group?.courseId);
+            if (!course) return { course: null, totalCompleted: 0, totalRequired: 0, remaining: 0, progress: 0 };
+
+            const courseExams = allExams.filter((e: any) => e.courseId === course.id && e.studentId === student.id);
+            const courseListens = allListens.filter((l: any) => l.courseId === course.id && l.studentId === student.id);
+            const testedLectures = courseExams.reduce((sum: number, e: any) => sum + (e.lecturesTested || 0), 0);
+            const listenedLectures = courseListens.reduce((sum: number, l: any) => sum + (l.lecturesCount || 1), 0);
+            const totalCompleted = testedLectures + listenedLectures;
+            const totalRequired = course.lecturesCount || 0;
+            const remaining = Math.max(0, totalRequired - totalCompleted);
+            const progress = totalRequired > 0 ? Math.min(Math.round((totalCompleted / totalRequired) * 100), 100) : 0;
+
+            return { course, totalCompleted, totalRequired, remaining, progress };
+        };
+    }, [groups, courses, allExams, allListens]);
+
+    // --- د- بيانات الطلاب غير المكتملين في نظام الدورات ---
+    const courseNotCompletedStudents = useMemo(() => {
         let base = (students || []).filter((s: any) => s.status === 'active');
 
         if (selectedGroupId !== 'all') {
@@ -112,64 +133,25 @@ export default function ExamsReportPage() {
         } else if (user?.role === 'teacher' || user?.role === 'supervisor') {
             base = base.filter((s: any) => s.groupId && assignedGroupIds.includes(s.groupId));
         }
-
-        const selectedArabicType = EXAM_TYPE_MAP[selectedExamType] || 'جديد';
 
         return base
             .map((s: any) => {
+                const progress = getStudentCourseProgress(s);
+                if (!progress.course) return null;
                 const groupName = groups?.find((g: any) => g.id === s.groupId)?.name || 'غير محدد';
-
-                // تحديد عدد الاختبارات المطلوبة حسب نوع المجموعة
-                // تلقين/نور بيان: 2، قرآن (الافتراضي): 3
-                const isReducedReq = groupName.includes('تلقين') || groupName.includes('نور بيان') || groupName.includes('نور البيان');
-                const requiredCount = isReducedReq ? 2 : 3;
-
-                // جلب اختبارات الطالب لهذا النصف (باستثناء "يعاد")
-                const studentExams = allExams.filter((e: any) => e.studentId === s.id && e.grade?.trim() !== 'يعاد');
-
-                // حساب الأنواع الفريدة التي اختبرها الطالب (مثلاً: جديد، ماضي قريب)
-                // إذا اختبر مرتين "جديد" تحسب مرة واحدة
-                const completedTypes = Array.from(new Set(studentExams.map((e: any) => e.type?.trim())));
-
-                // هل اختبر النوع المحدد في الفلتر؟
-                const hasDoneSelected = completedTypes.includes(selectedArabicType.trim());
-
-                // هل استوفى النصاب المطلوب؟
-                const hasMetQuota = completedTypes.length >= requiredCount;
-
-                // عدد الاختبارات المتبقية
-                const remainingCount = Math.max(0, requiredCount - completedTypes.length);
-
                 return {
                     ...s,
                     groupName,
-                    completedTypes,
-                    hasDoneSelected,
-                    hasMetQuota,
-                    remainingCount
+                    ...progress,
+                    rank: 0
                 };
             })
-            .filter((s: any) => {
-                // فلتر العدد المتبقي إذا كان محدداً
-                if (selectedRemainingCount !== 'all' && s.remainingCount !== parseInt(selectedRemainingCount)) {
-                    return false;
-                }
+            .filter((s: any) => s && s.remaining > 0)
+            .map((s: any, i: number) => ({ ...s, rank: i + 1 }));
+    }, [students, groups, selectedGroupId, user, assignedGroupIds, getStudentCourseProgress]);
 
-                // يظهر الطالب إذا:
-                // 1. لم يختبر النوع المختار حالياً
-                // 2. ولم يستوف النصاب الكلي المطلوب منه بعد
-                return !s.hasDoneSelected && !s.hasMetQuota;
-            })
-            .map((s: any, i: number) => ({
-                ...s,
-                rank: i + 1,
-                // تنسيق العرض: محمد أحمد (جديد، ماضي قريب)
-                completedDisplay: s.completedTypes.length > 0 ? `(${s.completedTypes.join(' - ')})` : ''
-            }));
-    }, [students, groups, allExams, selectedGroupId, selectedExamType, selectedRemainingCount, user, assignedGroupIds]);
-
-    // ب- حساب الطلاب "الأكثر اختباراً" بناءً على عدد مرات الاختبار
-    const mostTestedStudents = useMemo(() => {
+    // --- هـ- الطلاب الأكثر اختباراً في نظام الدورات ---
+    const courseMostTestedStudents = useMemo(() => {
         let base = (students || []).filter((s: any) => s.status === 'active');
 
         if (selectedGroupId !== 'all') {
@@ -178,86 +160,94 @@ export default function ExamsReportPage() {
             base = base.filter((s: any) => s.groupId && assignedGroupIds.includes(s.groupId));
         }
 
-        const limit = parseInt(examsLimit) || 0;
-        const arabicType = EXAM_TYPE_MAP[selectedExamType];
-
-        return base.map((s: any) => {
-            const studentExams = allExams.filter((e: any) =>
-                e.studentId === s.id &&
-                (!arabicType || e.type?.trim() === arabicType.trim()) &&
-                e.grade?.trim() !== 'يعاد' // استبعاد الاختبارات التي نتيجتها "يعاد"
-            );
-
-            const examsList = studentExams
-                .map((e: any) => `${e.surah || 'اختبار'} (${e.type?.trim() || 'اختبار'}: ${e.grade?.trim() || 'لم يسجل'})`)
-                .join('\n- ');
-
-            return {
-                ...s,
-                examsCount: studentExams.length,
-                examsList,
-                groupName: groups?.find((g: any) => g.id === s.groupId)?.name || 'غير محدد'
-            };
-        })
-            .filter((s: any) => s.examsCount >= limit && s.examsCount > 0)
-            .sort((a: any, b: any) => b.examsCount - a.examsCount)
+        return base
+            .map((s: any) => {
+                const progress = getStudentCourseProgress(s);
+                if (!progress.course || progress.totalCompleted === 0) return null;
+                const groupName = groups?.find((g: any) => g.id === s.groupId)?.name || 'غير محدد';
+                return {
+                    ...s,
+                    groupName,
+                    ...progress,
+                };
+            })
+            .filter((s: any) => s !== null)
+            .sort((a: any, b: any) => b.totalCompleted - a.totalCompleted)
             .map((s: any, i: number) => ({ ...s, rank: i + 1 }));
-    }, [students, groups, allExams, selectedGroupId, selectedExamType, examsLimit, user, assignedGroupIds]);
+    }, [students, groups, selectedGroupId, user, assignedGroupIds, getStudentCourseProgress]);
 
-    // ج- تجميع بيانات الأداء لكل مجموعة (إحصائيات الرسوم البيانية)
-    const performanceData = useMemo(() => {
+    // --- و- بيانات أداء المجموعات في نظام الدورات ---
+    const coursePerformanceData = useMemo(() => {
         let baseGroups = (groups || []);
         if (user?.role === 'teacher' || user?.role === 'supervisor') {
             baseGroups = baseGroups.filter((g: any) => assignedGroupIds.includes(g.id));
         }
 
-        // تصفية حسب نوع المجموعة (قرآن، تلقين، نور البيان)
-        if (performanceTypeFilter !== 'all') {
-            baseGroups = baseGroups.filter((g: any) => {
-                const name = g.name || '';
-                if (performanceTypeFilter === 'quran') return name.includes('قرآن');
-                if (performanceTypeFilter === 'talqeen') return name.includes('تلقين');
-                if (performanceTypeFilter === 'noor') return name.includes('نور بيان') || name.includes('نور البيان');
-                return true;
-            });
+        return baseGroups.map((g: any) => {
+            const groupStudents = (students || []).filter((s: any) => s.groupId === g.id && s.status === 'active');
+            let totalRequired = 0;
+            let totalCompleted = 0;
+            const studentDetails = groupStudents.map((s: any) => {
+                const progress = getStudentCourseProgress(s);
+                if (progress.course) {
+                    totalRequired += progress.totalRequired;
+                    totalCompleted += progress.totalCompleted;
+                }
+                return { ...s, ...progress };
+            }).filter((s: any) => s.course);
+
+            const avgProgress = totalRequired > 0 ? Math.round((totalCompleted / totalRequired) * 100) : 0;
+
+            return {
+                id: g.id,
+                name: g.name,
+                totalStudents: studentDetails.length,
+                totalRequired,
+                totalCompleted,
+                avgProgress,
+                studentDetails
+            };
+        }).filter((g: any) => g.totalStudents > 0);
+    }, [groups, students, user, assignedGroupIds, getStudentCourseProgress]);
+
+    // --- ز- بيانات متابعة الاستماع ---
+    const listeningProgressData = useMemo(() => {
+        let baseStudents = (students || []).filter((s: any) => s.status === 'active');
+
+        if (selectedGroupId !== 'all') {
+            baseStudents = baseStudents.filter((s: any) => s.groupId === selectedGroupId);
+        } else if (user?.role === 'teacher' || user?.role === 'supervisor') {
+            baseStudents = baseStudents.filter((s: any) => s.groupId && assignedGroupIds.includes(s.groupId));
         }
 
-                return baseGroups.map((g: any) => {
-                    const groupStudents = (students || []).filter((s: any) => s.groupId === g.id && s.status === 'active');
-                    const groupStudentIds = new Set(groupStudents.map((s: any) => s.id));
+        return baseStudents
+            .map((s: any) => {
+                const group = groups?.find((g: any) => g.id === s.groupId);
+                const course = courses?.find((c: any) => c.id === group?.courseId);
+                if (!course) return null;
 
-                    // لكل نوع، نحسب عدد الطلاب الفريدين الذين اختبروه (مرة واحدة على الأقل)
-                    const doneStudents = {
-                        new: new Set(),
-                        near: new Set(),
-                        far: new Set(),
-                    };
+                const studentListens = allListens.filter((l: any) => l.studentId === s.id && (!l.courseId || l.courseId === course.id));
+                const totalListened = studentListens.reduce((sum: number, l: any) => sum + (l.lecturesCount || 1), 0);
+                const totalRequired = course.lecturesCount || 0;
+                const progress = totalRequired > 0 ? Math.min(Math.round((totalListened / totalRequired) * 100), 100) : 0;
+                const remaining = Math.max(0, totalRequired - totalListened);
+                const groupName = group?.name || 'غير محدد';
 
-                    for (const e of allExams || []) {
-                        if (!groupStudentIds.has(e.studentId)) continue;
-                        const type = e.type?.trim();
-                        if (type === 'جديد') doneStudents.new.add(e.studentId);
-                        if (type === 'ماضي قريب') doneStudents.near.add(e.studentId);
-                        if (type === 'ماضي بعيد') doneStudents.far.add(e.studentId);
-                    }
-
-                    return {
-                        id: g.id,
-                        name: g.name,
-                        totalStudents: groupStudents.length,
-                        tested: {
-                            new: doneStudents.new.size,
-                            near: doneStudents.near.size,
-                            far: doneStudents.far.size,
-                        },
-                        notTested: {
-                            new: Math.max(0, groupStudents.length - doneStudents.new.size),
-                            near: Math.max(0, groupStudents.length - doneStudents.near.size),
-                            far: Math.max(0, groupStudents.length - doneStudents.far.size),
-                        }
-                    };
-                });
-    }, [groups, students, allExams, user, assignedGroupIds, performanceTypeFilter]);
+                return {
+                    ...s,
+                    groupName,
+                    courseName: course.name,
+                    totalListened,
+                    totalRequired,
+                    progress,
+                    remaining,
+                    rank: 0
+                };
+            })
+            .filter((s: any) => s !== null)
+            .sort((a: any, b: any) => b.progress - a.progress)
+            .map((s: any, i: number) => ({ ...s, rank: i + 1 }));
+    }, [students, groups, courses, allListens, selectedGroupId, user, assignedGroupIds]);
 
     return (
         <div className="min-h-screen bg-gray-50/50 pb-24 text-right font-sans overflow-x-hidden" dir="rtl">
@@ -266,7 +256,7 @@ export default function ExamsReportPage() {
             <header className="bg-white/80 backdrop-blur-md border-b border-gray-100 sticky top-0 z-30 px-2 md:px-6 py-3">
                 <div className="flex items-center max-w-4xl mx-auto gap-1 md:gap-4">
                     <h1 className="text-sm md:text-lg font-black text-gray-800 shrink-0">
-                    اختبارات <span className="md:inline hidden">({currentMonthLabel})</span>
+                    تقدم الدورات <span className="md:inline hidden">({currentMonthLabel})</span>
                     </h1>
 
                     {/* مبدل النصف (للجوال) */}
@@ -301,6 +291,13 @@ export default function ExamsReportPage() {
                             </button>
                         </div>
                     </div>
+
+                    {/* شارة تقدم الدورات */}
+                    <div className="flex items-center gap-1 shrink-0">
+                        <span className="text-[9px] md:text-xs font-bold text-purple-600 bg-purple-50 px-2 md:px-3 py-1 rounded-md border border-purple-100">
+                            <BarChart3 size={10} className="inline ml-0.5 md:ml-1" />الدورات
+                        </span>
+                    </div>
                 </div>
 
                 {/* --- شريط التنقل بين التبويبات --- */}
@@ -325,7 +322,7 @@ export default function ExamsReportPage() {
                     >
                         <Trophy size={12} />
                         الأكثر
-                        <span className={cn("text-[8px] md:text-[10px] font-black px-1 md:px-1.5 py-0.5 rounded-full font-sans", activeTab === 'mostTested' ? "bg-blue-100 text-blue-600" : "bg-gray-200 text-gray-500")}>{mostTestedStudents.length}</span>
+                        <span className={cn("text-[8px] md:text-[10px] font-black px-1 md:px-1.5 py-0.5 rounded-full font-sans", activeTab === 'mostTested' ? "bg-blue-100 text-blue-600" : "bg-gray-200 text-gray-500")}>{courseMostTestedStudents.length}</span>
                     </button>
                     <button
                         onClick={() => setActiveTab('notTested')}
@@ -335,277 +332,226 @@ export default function ExamsReportPage() {
                         )}
                     >
                         <AlertCircle size={12} />
-                        لم يختبروا
-                        <span className={cn("text-[8px] md:text-[10px] font-black px-1 md:px-1.5 py-0.5 rounded-full font-sans", activeTab === 'notTested' ? "bg-amber-100 text-amber-600" : "bg-gray-200 text-gray-500")}>{notTestedStudents.length}</span>
+                        غير مكتمل
+                        <span className={cn("text-[8px] md:text-[10px] font-black px-1 md:px-1.5 py-0.5 rounded-full font-sans", activeTab === 'notTested' ? "bg-amber-100 text-amber-600" : "bg-gray-200 text-gray-500")}>{courseNotCompletedStudents.length}</span>
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('followUp')}
+                        className={cn(
+                            "flex-1 py-1.5 md:py-2.5 rounded-lg text-[10px] md:text-sm font-bold transition-all flex items-center justify-center gap-0.5 md:gap-1.5",
+                            activeTab === 'followUp' ? "bg-white text-purple-600 shadow-sm" : "text-gray-500 hover:text-gray-700"
+                        )}
+                    >
+                        <Headphones size={12} />
+                        المتابعات
+                        <span className={cn("text-[8px] md:text-[10px] font-black px-1 md:px-1.5 py-0.5 rounded-full font-sans", activeTab === 'followUp' ? "bg-purple-100 text-purple-600" : "bg-gray-200 text-gray-500")}>{listeningProgressData.length}</span>
                     </button>
                 </div>
             </header>
 
             <main className="max-w-4xl mx-auto px-2 md:px-6 py-4 space-y-6">
-                {/* --- التبويب 1: قائمة الطلاب الذين لم يختبروا (الباقي) --- */}
-                    {activeTab === 'notTested' && (
-                        <div className="space-y-6 animate-[fadeIn_0.3s_ease-out]">
-                            <div className="flex flex-col md:flex-row-reverse items-center justify-between gap-4">
-                                <div className="flex flex-row-reverse items-center gap-1 md:gap-3 w-full md:w-auto flex-wrap justify-center">
-                                    {/* فلتر المجموعة ونوع الاختبار */}
-                                    <div className="relative">
-                                        <select
-                                            value={selectedRemainingCount}
-                                            onChange={(e) => setSelectedRemainingCount(e.target.value)}
-                                            className="appearance-none bg-white border border-gray-100 px-5 py-2 pr-3 rounded-lg md:rounded-2xl text-[10px] md:text-sm font-bold text-gray-600 focus:outline-none text-right"
-                                        >
-                                            <option value="all">الكل</option>
-                                            <option value="3">بقي 3</option>
-                                            <option value="2">بقي 2</option>
-                                            <option value="1">بقي 1</option>
-                                        </select>
-                                        <ChevronDown size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                                    </div>
-                                    <div className="relative">
-                                        <select
-                                            value={selectedGroupId}
-                                            onChange={(e) => setSelectedGroupId(e.target.value)}
-                                            className="appearance-none bg-white border border-gray-100 px-5 py-2 pr-3 rounded-lg md:rounded-2xl text-[10px] md:text-sm font-bold text-gray-600 focus:outline-none text-right"
-                                        >
-                                            <option value="all">كل المجموعات</option>
-                                            {filteredGroupsList?.map((g: any) => <option key={g.id} value={g.id}>{g.name}</option>)}
-                                        </select>
-                                        <ChevronDown size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                                    </div>
-                                    <div className="relative">
-                                        <select
-                                            value={selectedExamType}
-                                            onChange={(e) => setSelectedExamType(e.target.value)}
-                                            className="appearance-none bg-white border border-gray-100 px-5 py-2 pr-3 rounded-lg md:rounded-2xl text-[10px] md:text-sm font-bold text-gray-600 focus:outline-none text-right"
-                                        >
-                                            <option value="new">جديد</option>
-                                            <option value="near">ماضي قريب</option>
-                                            <option value="far">بعيد</option>
-                                        </select>
-                                        <ChevronDown size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                                    </div>
+                {/* --- التبويب 1: غير مكتمل --- */}
+                {activeTab === 'notTested' && (
+                    <div className="space-y-6 animate-[fadeIn_0.3s_ease-out]">
+                        <div className="flex flex-col md:flex-row-reverse items-center justify-between gap-4">
+                            <div className="flex flex-row-reverse items-center gap-1 md:gap-3 w-full md:w-auto flex-wrap justify-center">
+                                <span className="text-xs font-bold text-purple-600 bg-purple-50 px-3 py-2 rounded-lg">
+                                    الطلاب المسجلين في دورات ولم يكملوها بعد
+                                </span>
+                                <div className="relative">
+                                    <select value={selectedGroupId} onChange={(e) => setSelectedGroupId(e.target.value)}
+                                        className="appearance-none bg-white border border-gray-100 px-5 py-2 pr-3 rounded-lg md:rounded-2xl text-[10px] md:text-sm font-bold text-gray-600 focus:outline-none text-right">
+                                        <option value="all">كل المجموعات</option>
+                                        {filteredGroupsList?.map((g: any) => <option key={g.id} value={g.id}>{g.name}</option>)}
+                                    </select>
+                                    <ChevronDown size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                                 </div>
                             </div>
+                        </div>
 
-                            <div className="space-y-3">
-                                {/* عداد الطلاب */}
-                                <div className="flex items-center justify-between px-1 mb-2">
-                                    <span className="text-xs font-bold text-gray-400">طلاب القائمة</span>
-                                    <span className="bg-amber-100 text-amber-700 text-xs font-black px-3 py-1 rounded-full font-sans">{notTestedStudents.length} طالب</span>
-                                </div>
-                                {notTestedStudents.map((student: any) => (
-                                    <div
-                                        key={student.id}
-                                        onClick={() => setSelectedStudentForDetails(student)}
-                                        className="bg-white rounded-[20px] p-3 flex items-center justify-between border border-gray-100 shadow-sm group cursor-pointer"
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-9 h-9 bg-amber-50 rounded-xl flex items-center justify-center text-amber-500 shrink-0">
-                                                <User size={18} />
-                                            </div>
-                                            <div className="text-right">
-                                                <h3 className="font-bold text-gray-900 group-hover:text-amber-600 transition-colors text-base">
-                                                    {student.fullName}
-                                                    {student.completedDisplay && <span className="text-xs text-amber-600/70 mr-2 font-normal">{student.completedDisplay}</span>}
-                                                </h3>
-                                                <span className="text-xs text-gray-400 font-bold">{student.groupName}</span>
-                                            </div>
+                        <div className="space-y-3">
+                            <div className="flex items-center justify-between px-1 mb-2">
+                                <span className="text-xs font-bold text-gray-400">طلاب القائمة</span>
+                                <span className="bg-amber-100 text-amber-700 text-xs font-black px-3 py-1 rounded-full font-sans">
+                                    {courseNotCompletedStudents.length} طالب
+                                </span>
+                            </div>
+                            {courseNotCompletedStudents.map((student: any) => (
+                                <div key={student.id} onClick={() => setSelectedStudentForDetails(student)}
+                                    className="bg-white rounded-[20px] p-3 flex items-center justify-between border border-gray-100 shadow-sm group cursor-pointer">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-9 h-9 bg-amber-50 rounded-xl flex items-center justify-center text-amber-500 shrink-0">
+                                            <User size={18} />
+                                        </div>
+                                        <div className="text-right">
+                                            <h3 className="font-bold text-gray-900 group-hover:text-amber-600 transition-colors text-base">
+                                                {student.fullName}
+                                                <span className="text-[10px] text-purple-500 mr-2 font-normal">بقي {student.remaining} محاضرة</span>
+                                            </h3>
+                                            <span className="text-xs text-gray-400 font-bold">{student.groupName}</span>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-1.5 bg-purple-50 px-2 py-1 rounded-lg">
+                                            <span className="text-[10px] font-black text-purple-600 font-sans">{student.progress}%</span>
                                         </div>
                                         <button className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400">
                                             <ChevronRight size={16} />
                                         </button>
                                     </div>
-                                ))}
-                                {/* حالة عدم وجود طلاب (الكل اختبر) */}
-                                {notTestedStudents.length === 0 && (
-                                    <div className="text-center py-20 bg-white/40 rounded-[32px] border-2 border-dashed border-gray-100">
-                                        <div className="w-16 h-16 bg-green-50 text-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                                            <Trophy size={32} />
-                                        </div>
-                                        <h3 className="text-lg font-black text-gray-800">ممتاز! الكل اختبروا</h3>
-                                        <p className="text-sm text-gray-400 font-bold mt-1">جميع طلاب هذا الفلتر قد أتموا اختباراتهم لهذا الشهر</p>
+                                </div>
+                            ))}
+                            {courseNotCompletedStudents.length === 0 && (
+                                <div className="text-center py-20 bg-white/40 rounded-[32px] border-2 border-dashed border-gray-100">
+                                    <div className="w-16 h-16 bg-green-50 text-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <Trophy size={32} />
                                     </div>
-                                )}
+                                    <h3 className="text-lg font-black text-gray-800">ممتاز! الكل أكمل الدورات</h3>
+                                    <p className="text-sm text-gray-400 font-bold mt-1">جميع طلاب هذا الفلتر أكملوا متطلبات دوراتهم</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {/* --- التبويب 2: الأكثر تقدماً في الدورات --- */}
+                {activeTab === 'mostTested' && (
+                    <div className="space-y-3">
+                        <div className="flex items-center justify-between px-1 mb-2">
+                            <span className="text-[10px] md:text-xs font-bold text-gray-400">طلاب القائمة</span>
+                            <span className="bg-blue-100 text-blue-700 text-[10px] md:text-xs font-black px-2 md:px-3 py-0.5 md:py-1 rounded-full font-sans">
+                                {courseMostTestedStudents.length} طالب
+                            </span>
+                        </div>
+                        {courseMostTestedStudents.map((student: any) => (
+                            <div key={student.id} onClick={() => setSelectedStudentForDetails(student)}
+                                className="bg-white rounded-[16px] md:rounded-[20px] p-2.5 md:p-3 flex items-center justify-between border border-gray-100 shadow-sm group cursor-pointer">
+                                <div className="flex-1 min-w-0 flex items-center gap-2 md:gap-3">
+                                    <div className="w-7 h-7 md:w-9 md:h-9 bg-purple-50 rounded-[10px] md:rounded-xl flex items-center justify-center text-purple-600 shrink-0">
+                                        <User size={14} className="md:size-[18px]" />
+                                    </div>
+                                    <div className="text-right flex-1 min-w-0">
+                                        <h3 className="font-bold text-gray-900 group-hover:text-purple-600 transition-colors text-sm md:text-base truncate">{student.fullName}</h3>
+                                        <span className="text-[10px] md:text-xs text-gray-400 font-bold truncate block">{student.groupName}</span>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
+                                    <div className="bg-purple-50 px-2 md:px-3 py-1 md:py-1.5 rounded-[8px] md:rounded-lg flex items-center gap-1 md:gap-2">
+                                        <span className="text-purple-600 font-black text-xs md:text-sm font-sans">{student.totalCompleted}</span>
+                                        <span className="text-[9px] md:text-xs text-purple-400 font-bold">/ {student.totalRequired}</span>
+                                    </div>
+                                    <button className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400">
+                                        <ChevronRight size={12} className="md:size-[16px]" />
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                {/* --- التبويب 3: أداء المجموعات --- */}
+                {activeTab === 'performance' && (
+                    <div className="space-y-8 animate-[fadeIn_0.3s_ease-out]">
+                        {/* شريط الفلاتر */}
+                        <div className="flex items-center justify-center gap-4 py-3 border-y border-gray-100 flex-wrap">
+                            <span className="text-xs font-bold text-purple-600 bg-purple-50 px-3 py-2 rounded-lg">
+                                نسبة إنجاز الدورات لكل مجموعة
+                            </span>
+                            <div className="relative">
+                                <select value={selectedGroupId} onChange={(e) => setSelectedGroupId(e.target.value)}
+                                    className="appearance-none bg-white border border-gray-100 px-3 md:px-5 py-1.5 md:py-2 pr-2 md:pr-3 rounded-lg md:rounded-xl text-[9px] md:text-sm font-bold text-gray-600 focus:outline-none text-right cursor-pointer">
+                                    <option value="all">كل المجموعات</option>
+                                    {filteredGroupsList?.map((g: any) => <option key={g.id} value={g.id}>{g.name}</option>)}
+                                </select>
+                                <ChevronDown size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                             </div>
                         </div>
-                    )}
 
-                    {/* --- التبويب 2: الطلاب الأكثر اختباراً --- */}
-                    {activeTab === 'mostTested' && (
-                        <div className="space-y-3">
-                            {/* عداد الطلاب */}
-                            <div className="flex items-center justify-between px-1 mb-2">
-                                <span className="text-[10px] md:text-xs font-bold text-gray-400">طلاب القائمة</span>
-                                <span className="bg-blue-100 text-blue-700 text-[10px] md:text-xs font-black px-2 md:px-3 py-0.5 md:py-1 rounded-full font-sans">{mostTestedStudents.length} طالب</span>
-                            </div>
-                            {mostTestedStudents.map((student: any) => (
-                                <div
-                                    key={student.id}
-                                    onClick={() => setSelectedStudentForDetails(student)}
-                                    className="bg-white rounded-[16px] md:rounded-[20px] p-2.5 md:p-3 flex items-center justify-between border border-gray-100 shadow-sm group cursor-pointer"
-                                >
-                                    <div className="flex-1 min-w-0 flex items-center gap-2 md:gap-3">
-                                        <div className="w-7 h-7 md:w-9 md:h-9 bg-blue-50 rounded-[10px] md:rounded-xl flex items-center justify-center text-blue-600 shrink-0">
-                                            <User size={14} className="md:size-[18px]" />
-                                        </div>
-                                        <div className="text-right flex-1 min-w-0">
-                                            <h3 className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors text-sm md:text-base truncate">{student.fullName}</h3>
-                                            <span className="text-[10px] md:text-xs text-gray-400 font-bold truncate block">{student.groupName}</span>
-                                        </div>
+                        {/* أشرطة التقدم */}
+                        <div className="space-y-6">
+                            {coursePerformanceData.map((data: any) => (
+                                <div key={data.id} className="bg-white rounded-2xl p-4 border border-gray-100 space-y-3">
+                                    <div className="flex flex-row-reverse items-center justify-between">
+                                        <span className="text-sm font-bold text-gray-700">{data.name}</span>
+                                        <span className="text-xs font-black text-gray-400 font-sans">{data.totalStudents} طالب</span>
                                     </div>
-
-                                    <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
-                                        <div className="bg-blue-50 px-2 md:px-3 py-1 md:py-1.5 rounded-[8px] md:rounded-lg flex items-center gap-1 md:gap-2">
-                                            <span className="text-blue-600 font-black text-xs md:text-sm font-sans">{student.examsCount}</span>
-                                            <span className="text-[9px] md:text-xs text-blue-400 font-bold">اختبار</span>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-[11px] font-bold text-gray-400 w-16 shrink-0 text-left">الإنجاز</span>
+                                        <div className="flex-1 h-4 bg-gray-100 rounded-full overflow-hidden shadow-inner relative">
+                                            <div style={{ width: `${data.avgProgress}%` }}
+                                                className="absolute right-0 top-0 h-full bg-gradient-to-l from-purple-400 to-violet-500 rounded-full animate-[chartFill_0.7s_ease-out]" />
                                         </div>
-                                        
-                                        <button 
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                const phone = student.parentPhone || student.studentPhone || '';
-                                                const cleanPhone = phone.replace(/[^0-9]/g, '');
-                                                const last6Digits = cleanPhone.slice(-6);
-                                                
-                                                const message = `السلام عليكم ورحمة الله وبركاته 🌹\nنزف إليكم سعادة وفرحاً بتفوق الطالب/ة: *${student.fullName}*\nلقد أتم اختباراته بنجاح لهذا الشهر (${currentMonthLabel}) 🌟\n\nما تم اختباره:\n${student.examsList}\n\nنتمنى له/لها دوام التوفيق والنجاح.\n\nيمكنكم متابعة النتائج والتسجيل في الحلقات عبر رابط موقعنا:\n🔗 https://shatpycenter-um2b.vercel.app/\n\n🔐 بيانات الدخول:\nاسم المستخدم: *رقم الهاتف المسجل*\nالباسورد: *آخر 6 أرقام (${last6Digits})*\n\nمع تحيات إدارة المعلم الفاضل 🏛️`;
-                                                window.open(getWhatsAppUrl(phone, message), '_blank');
-                                            }}
-                                            className="w-7 h-7 md:w-9 md:h-9 bg-green-50 text-green-600 rounded-[10px] md:rounded-xl flex items-center justify-center hover:bg-green-600 hover:text-white transition-all shadow-sm border border-green-100"
-                                            title="إرسال التهنئة عبر واتساب"
-                                        >
-                                            <MessageCircle size={14} className="md:size-[18px]" />
-                                        </button>
-
-                                        <button className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400">
-                                            <ChevronRight size={12} className="md:size-[16px]" />
-                                        </button>
+                                        <span className="flex items-center gap-1 text-[11px] font-black text-gray-500 font-sans">
+                                            <span className="text-purple-600">{data.totalCompleted}</span>
+                                            <span className="text-gray-300">/</span>
+                                            <span className="text-gray-400">{data.totalRequired}</span>
+                                        </span>
                                     </div>
+                                    <p className="text-[10px] text-gray-400 font-bold text-left">{data.avgProgress}%</p>
                                 </div>
                             ))}
                         </div>
-                    )}
+                    </div>
+                )}
 
-
-
-                    {/* --- التبويب 4: مقارنة أداء المجموعات --- */}
-                    {activeTab === 'performance' && (
-                        <div className="space-y-8 animate-[fadeIn_0.3s_ease-out]">
-                            {/* شريط الفلاتر التفاعلي لتبويب الأداء - سطر واحد */}
-                            <div className="flex items-center justify-start md:justify-center gap-1 md:gap-4 py-3 border-y border-gray-100 flex-row-reverse flex-wrap w-full">
-                                <button
-                                    onClick={() => setPerformanceFilter('all')}
-                                    className={cn("flex flex-row-reverse items-center gap-1 md:gap-3 px-2 md:px-4 py-1.5 md:py-2 rounded-xl transition-all", performanceFilter === 'all' ? "bg-blue-600 text-white shadow-md" : "bg-gray-50 text-gray-500 hover:bg-gray-100")}
-                                >
-                                    <span className="text-[9px] md:text-sm font-black">الكل</span>
-                                    <div className={cn("w-1 h-1 md:w-2 md:h-2 rounded-full", performanceFilter === 'all' ? "bg-white/20" : "bg-blue-600")} />
-                                </button>
-                                <button
-                                    onClick={() => setPerformanceFilter('new')}
-                                    className={cn("flex flex-row-reverse items-center gap-1 md:gap-3 px-2 md:px-4 py-1.5 md:py-2 rounded-xl transition-all", performanceFilter === 'new' ? "bg-green-500 text-white shadow-md" : "bg-gray-50 text-gray-500 hover:bg-gray-100")}
-                                >
-                                    <span className="text-[9px] md:text-sm font-black">جديد</span>
-                                    <div className={cn("w-1 h-1 md:w-2 md:h-2 rounded-full", performanceFilter === 'new' ? "bg-white" : "bg-green-500")} />
-                                </button>
-                                <button
-                                    onClick={() => setPerformanceFilter('near')}
-                                    className={cn("flex flex-row-reverse items-center gap-1 md:gap-3 px-2 md:px-4 py-1.5 md:py-2 rounded-xl transition-all", performanceFilter === 'near' ? "bg-amber-500 text-white shadow-md" : "bg-gray-50 text-gray-500 hover:bg-gray-100")}
-                                >
-                                    <span className="text-[9px] md:text-sm font-black">ماضي قريب</span>
-                                    <div className={cn("w-1 h-1 md:w-2 md:h-2 rounded-full", performanceFilter === 'near' ? "bg-white" : "bg-amber-500")} />
-                                </button>
-                                <button
-                                    onClick={() => setPerformanceFilter('far')}
-                                    className={cn("flex flex-row-reverse items-center gap-1 md:gap-3 px-2 md:px-4 py-1.5 md:py-2 rounded-xl transition-all", performanceFilter === 'far' ? "bg-purple-500 text-white shadow-md" : "bg-gray-50 text-gray-500 hover:bg-gray-100")}
-                                >
-                                    <span className="text-[9px] md:text-sm font-black">بعيد</span>
-                                    <div className={cn("w-1 h-1 md:w-2 md:h-2 rounded-full", performanceFilter === 'far' ? "bg-white" : "bg-purple-500")} />
-                                </button>
-
-                                <div className="relative">
-                                    <select
-                                        value={performanceTypeFilter}
-                                        onChange={(e) => setPerformanceTypeFilter(e.target.value as any)}
-                                        className="appearance-none bg-white border border-gray-100 px-3 md:px-5 py-1.5 md:py-2 pr-2 md:pr-3 rounded-lg md:rounded-xl text-[9px] md:text-sm font-bold text-gray-600 focus:outline-none text-right cursor-pointer"
-                                    >
-                                        <option value="all">كل المجموعات</option>
-                                        <option value="quran">قرآن</option>
-                                        <option value="talqeen">تلقين</option>
-                                        <option value="noor">نور البيان</option>
-                                    </select>
-                                    <ChevronDown size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                                </div>
-                            </div>
-
-                            {/* الرسوم البيانية (أشرطة التقدم) */}
-                            <div className="space-y-6">
-                                {performanceData.map((data: any) => {
-                                        const totalSt = data.totalStudents;
-
-                                        if (performanceFilter === 'all') {
-                                            return (
-                                                <div key={data.id} className="space-y-3 bg-white rounded-2xl p-4 border border-gray-100">
-                                                    <div className="flex flex-row-reverse items-center justify-between">
-                                                        <span className="text-sm font-bold text-gray-700">{data.name}</span>
-                                                        <span className="text-xs font-black text-gray-400 font-sans">{totalSt} طالب</span>
-                                                    </div>
-                                                    <div className="space-y-2 pr-2">
-                                                        {(['new', 'near', 'far'] as const).map(type => {
-                                                            const label = { new: 'جديد', near: 'ماضي قريب', far: 'بعيد' }[type];
-                                                            const testedVal = data.tested[type];
-                                                            const notTestedVal = data.notTested[type];
-                                                            const barColor = type === 'new' ? 'from-green-400 to-emerald-500'
-                                                                : type === 'near' ? 'from-amber-400 to-orange-500'
-                                                                : 'from-purple-400 to-violet-500';
-                                                            const textColor = type === 'new' ? 'text-emerald-600'
-                                                                : type === 'near' ? 'text-amber-600'
-                                                                : 'text-purple-600';
-                                                            return (
-                                                                <div key={type} className="flex items-center gap-2">
-                                                                    <span className="text-[11px] font-bold text-gray-400 w-16 shrink-0 text-left">{label}</span>
-                                                                    <div className="flex-1 h-4 bg-gray-100 rounded-full overflow-hidden shadow-inner relative">
-                                                                        <div style={{ width: `${(testedVal / Math.max(totalSt, 1)) * 100}%` }} className={`absolute right-0 top-0 h-full bg-gradient-to-l ${barColor} rounded-full animate-[chartFill_0.7s_ease-out]`} />
-                                                                    </div>
-                                                                    <span className="flex items-center gap-1 text-[11px] font-black text-gray-500 font-sans">
-                                                                        <span className={textColor}>{testedVal}</span>
-                                                                        <span className="text-gray-300">/</span>
-                                                                        <span className="text-gray-400">{totalSt}</span>
-                                                                    </span>
-                                                                </div>
-                                                            );
-                                                        })}
-                                                    </div>
-                                                </div>
-                                            );
-                                        }
-
-                                        const testedVal = (data.tested as any)[performanceFilter];
-                                        const barWidth = `${(testedVal / Math.max(totalSt, 1)) * 100}%`;
-                                        const barColor = performanceFilter === 'new' ? 'from-green-400 to-emerald-500'
-                                            : performanceFilter === 'near' ? 'from-amber-400 to-orange-500'
-                                            : 'from-purple-400 to-violet-500';
-                                        const textColor = performanceFilter === 'new' ? 'text-emerald-600'
-                                            : performanceFilter === 'near' ? 'text-amber-600'
-                                            : 'text-purple-600';
-
-                                        return (
-                                            <div key={data.id} className="space-y-2">
-                                                <div className="flex flex-row-reverse items-center justify-between px-1">
-                                                    <span className="text-sm font-bold text-gray-700">{data.name}</span>
-                                                    <span className="text-xs font-black text-gray-400 font-sans">
-                                                        <span className={textColor}>{testedVal}</span>
-                                                        <span className="text-gray-300">/</span>
-                                                        <span className="text-gray-500">{totalSt} اختبر</span>
-                                                    </span>
-                                                </div>
-                                                <div className="h-6 w-full bg-gray-100 rounded-full overflow-hidden shadow-inner relative">
-                                                    <div style={{ width: barWidth }} className={`absolute right-0 top-0 h-full bg-gradient-to-l ${barColor} rounded-full animate-[chartFill_0.7s_ease-out]`} />
-                                                </div>
-                                            </div>
-                                        );
-                                })}
-                            </div>
+                {/* --- التبويب 4: المتابعات (الاستماع) --- */}
+                {activeTab === 'followUp' && (
+                    <div className="space-y-4 animate-[fadeIn_0.3s_ease-out]">
+                        <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-purple-600 bg-purple-50 px-3 py-2 rounded-lg">
+                                تقدم الاستماع للمحاضرات
+                            </span>
+                            <span className="text-xs font-black text-gray-500 font-sans">{listeningProgressData.length} طالب</span>
                         </div>
-                    )}
+                        <div className="space-y-3">
+                            {listeningProgressData.map((student: any) => (
+                                <div key={student.id} onClick={() => setSelectedStudentForDetails(student)}
+                                    className="bg-white rounded-[20px] p-3 border border-gray-100 shadow-sm group cursor-pointer">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-9 h-9 bg-purple-50 rounded-xl flex items-center justify-center text-purple-500 shrink-0">
+                                                <Headphones size={18} />
+                                            </div>
+                                            <div className="text-right">
+                                                <h3 className="font-bold text-gray-900 group-hover:text-purple-600 transition-colors text-sm">
+                                                    {student.fullName}
+                                                </h3>
+                                                <span className="text-[10px] text-gray-400 font-bold">{student.groupName} · {student.courseName}</span>
+                                            </div>
+                                        </div>
+                                        <span className={cn("text-xs font-black px-2 py-1 rounded-lg", student.progress >= 100 ? "bg-green-50 text-green-600" : "bg-purple-50 text-purple-600")}>
+                                            {student.progress}%
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <div className="flex-1 h-2.5 bg-gray-100 rounded-full overflow-hidden">
+                                            <div className={cn("h-full rounded-full transition-all duration-500", student.progress >= 100 ? "bg-green-500" : "bg-purple-500")}
+                                                style={{ width: `${student.progress}%` }} />
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center justify-between mt-1.5">
+                                        <span className="text-[10px] text-gray-400 font-bold">
+                                            {student.totalListened} / {student.totalRequired} محاضرة
+                                        </span>
+                                        {student.remaining > 0 && (
+                                            <span className="text-[10px] text-amber-500 font-bold">بقي {student.remaining}</span>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                            {listeningProgressData.length === 0 && (
+                                <div className="text-center py-20 bg-white/40 rounded-[32px] border-2 border-dashed border-gray-100">
+                                    <div className="w-16 h-16 bg-purple-50 text-purple-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <Headphones size={32} />
+                                    </div>
+                                    <h3 className="text-lg font-black text-gray-800">لا توجد متابعات</h3>
+                                    <p className="text-sm text-gray-400 font-bold mt-1">لا يوجد طلاب مسجلين في دورات أو لا توجد متابعات بعد</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
             </main>
 
             {/* --- مودال تفاصيل الطالب (يظهر عند النقر على أي طالب) --- */}
