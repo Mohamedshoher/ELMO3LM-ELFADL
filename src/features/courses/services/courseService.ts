@@ -15,7 +15,7 @@ export const getCourses = async (): Promise<Course[]> => {
     }
 };
 
-export const updateCourse = async (course: { id: string; name?: string; lecturesCount?: number; link?: string; bookLink?: string }): Promise<void> => {
+export const updateCourse = async (course: { id: string; name?: string; lecturesCount?: number; link?: string; bookLink?: string; categoryId?: string }): Promise<void> => {
     try {
         const res = await fetch('/api/courses', {
             method: 'PUT',
@@ -29,7 +29,7 @@ export const updateCourse = async (course: { id: string; name?: string; lectures
     }
 };
 
-export const addCourse = async (course: { name: string; lecturesCount: number; link: string; bookLink?: string }): Promise<string> => {
+export const addCourse = async (course: { name: string; lecturesCount: number; link: string; bookLink?: string; categoryId?: string }): Promise<string> => {
     try {
         const { data, error } = await supabase
             .from('courses')
@@ -38,6 +38,7 @@ export const addCourse = async (course: { name: string; lecturesCount: number; l
                 lectures_count: course.lecturesCount,
                 link: course.link,
                 book_link: course.bookLink || null,
+                category_id: course.categoryId || null,
             }])
             .select('id')
             .single();

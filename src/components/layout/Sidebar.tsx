@@ -47,6 +47,24 @@ export default function Sidebar() {
             roles: ['director', 'supervisor', 'parent']
         },
         {
+            label: user?.role === 'teacher' ? 'صفحتي' : 'المعلمين',
+            href: '/teachers',
+            icon: Users,
+            roles: ['director', 'supervisor', 'teacher']
+        },
+        {
+            label: 'الدورات',
+            href: '/courses',
+            icon: BookOpen,
+            roles: ['director', 'supervisor', 'teacher']
+        },
+        {
+            label: 'المجموعات',
+            href: '/groups',
+            icon: LayoutGrid,
+            roles: ['director', 'supervisor', 'teacher']
+        },
+        {
             label: 'الطلاب',
             href: '/students',
             icon: GraduationCap,
@@ -65,15 +83,15 @@ export default function Sidebar() {
             roles: ['director']
         },
         {
-            label: user?.role === 'teacher' ? 'صفحتي' : 'المعلمين',
-            href: '/teachers',
-            icon: Users,
+            label: 'تقارير الاختبارات',
+            href: '/exams-report',
+            icon: FileText,
             roles: ['director', 'supervisor', 'teacher']
         },
         {
-            label: 'المجموعات',
-            href: '/groups',
-            icon: LayoutGrid,
+            label: 'تقارير الحضور',
+            href: '/attendance-report',
+            icon: CalendarCheck,
             roles: ['director', 'supervisor', 'teacher']
         },
         {
@@ -89,18 +107,6 @@ export default function Sidebar() {
             roles: ['director', 'supervisor', 'teacher']
         },
         {
-            label: 'تقارير الحضور',
-            href: '/attendance-report',
-            icon: CalendarCheck,
-            roles: ['director', 'supervisor', 'teacher']
-        },
-        {
-            label: 'تقارير الاختبارات',
-            href: '/exams-report',
-            icon: FileText,
-            roles: ['director', 'supervisor', 'teacher']
-        },
-        {
             label: 'الرسائل',
             href: '/chat',
             icon: MessageCircle,
@@ -111,12 +117,6 @@ export default function Sidebar() {
             href: '/automation',
             icon: Zap,
             roles: ['director']
-        },
-        {
-            label: 'الدورات',
-            href: '/courses',
-            icon: BookOpen,
-            roles: ['director', 'supervisor', 'teacher']
         },
     ];
 

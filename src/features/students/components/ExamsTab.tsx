@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Trash2, BookOpen, BarChart3, MapPin, User } from 'lucide-react';
+import { Trash2, BookOpen, BarChart3, MapPin, User, Award, CheckCircle, X } from 'lucide-react';
 import { Button } from '../../../components/ui/button';
 import { cn } from '../../../lib/utils';
 import { useAuthStore } from '../../../store/useAuthStore';
@@ -25,6 +25,36 @@ export default function ExamsTab({ student, records }: any) {
     const [examLocation, setExamLocation] = useState('حضوري');
 
     const canEdit = user?.role === 'director' || user?.role === 'teacher' || user?.role === 'supervisor';
+    const [manualGrade, setManualGrade] = useState(student.courseFinalGrade || 'جيد');
+    const [completing, setCompleting] = useState(false);
+
+    const handleManualComplete = async () => {
+        setCompleting(true);
+        try {
+            await updateStudent(student.id, {
+                courseCompletedAt: new Date().toISOString(),
+                courseFinalGrade: manualGrade,
+            } as any);
+            queryClient.invalidateQueries({ queryKey: ['students'] });
+        } catch (e) {
+            console.error(e);
+        }
+        setCompleting(false);
+    };
+
+    const handleUndoComplete = async () => {
+        setCompleting(true);
+        try {
+            await updateStudent(student.id, {
+                courseCompletedAt: null,
+                courseFinalGrade: null,
+            } as any);
+            queryClient.invalidateQueries({ queryKey: ['students'] });
+        } catch (e) {
+            console.error(e);
+        }
+        setCompleting(false);
+    };
 
     const handleAddCourse = () => {
         if (!courseId) return alert('اختر الدورة');
@@ -135,6 +165,59 @@ export default function ExamsTab({ student, records }: any) {
                     </>
                 )}
             </div>
+
+            {/* إكمال الدورة يدوياً */}
+            {studentCourse && canEdit && (
+                <div className="bg-gradient-to-l from-amber-50 to-yellow-50 p-5 rounded-[24px] border border-amber-100 space-y-4">
+                    <h4 className="font-bold text-sm flex items-center gap-2">
+                        <Award size={16} className="text-amber-600" />
+                        إكمال الدورة
+                    </h4>
+                    <p className="text-[10px] text-gray-500 font-bold">
+                        {student.courseCompletedAt
+                            ? `تم إكمال الدورة في ${new Date(student.courseCompletedAt).toLocaleDateString('ar-EG')} بتقدير: ${student.courseFinalGrade || 'غير محدد'}`
+                            : 'الطالب لم يكمل الدورة بعد. يمكنك تحديد التقدير العام وإكمالها.'}
+                    </p>
+                    <div className="flex items-center gap-3">
+                        <select
+                            value={manualGrade}
+                            onChange={e => setManualGrade(e.target.value)}
+                            className="flex-1 h-11 rounded-xl text-xs font-bold px-4 border-gray-100 bg-white"
+                        >
+                            <option value="جيد">جيد</option>
+                            <option value="جيد جداً">جيد جداً</option>
+                            <option value="ممتاز">ممتاز</option>
+                        </select>
+                        <button
+                            onClick={handleManualComplete}
+                            disabled={completing}
+                            className={cn(
+                                "h-11 px-6 rounded-xl font-black text-xs flex items-center gap-2 transition-all active:scale-95",
+                                student.courseCompletedAt
+                                    ? "bg-amber-500 text-white hover:bg-amber-600"
+                                    : "bg-gradient-to-l from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30"
+                            )}
+                        >
+                            {completing ? (
+                                <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+                            ) : (
+                                <>{student.courseCompletedAt ? <CheckCircle size={14} /> : <Award size={14} />}
+                                {student.courseCompletedAt ? 'تحديث التقدير' : 'إكمال الدورة'}</>
+                            )}
+                        </button>
+                        {student.courseCompletedAt && (
+                            <button
+                                onClick={handleUndoComplete}
+                                disabled={completing}
+                                className="h-11 px-4 bg-red-50 text-red-600 rounded-xl font-black text-[10px] border border-red-100 hover:bg-red-500 hover:text-white transition-all active:scale-95 flex items-center gap-1"
+                                title="إلغاء الإكمال"
+                            >
+                                <X size={14} /> تراجع
+                            </button>
+                        )}
+                    </div>
+                </div>
+            )}
 
             {/* أشرطة التقدم للدورات */}
             {courseExams.length > 0 && (

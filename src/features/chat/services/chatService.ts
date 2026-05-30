@@ -97,7 +97,7 @@ export const getMessages = async (conversationId: string): Promise<ChatMessage[]
   try {
     const { data, error } = await supabase
       .from('messages')
-      .select('id, conversation_id, sender_id, sender_name, sender_role, content, created_at, read_by, is_pinned')
+      .select('id, conversation_id, sender_id, sender_name, sender_role, content, created_at, read_by')
       .eq('conversation_id', conversationId)
       .order('created_at', { ascending: true });
 
@@ -115,7 +115,7 @@ export const getMessages = async (conversationId: string): Promise<ChatMessage[]
       content: row.content,
       timestamp: new Date(row.created_at),
       read: row.read_by && row.read_by.length > 0,
-      isPinned: row.is_pinned || false
+      isPinned: false
     })) as ChatMessage[];
   } catch (error) {
     console.error("Error fetching messages:", error);

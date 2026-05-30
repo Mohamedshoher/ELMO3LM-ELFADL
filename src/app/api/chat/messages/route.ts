@@ -38,6 +38,7 @@ export async function POST(request: NextRequest) {
                 sender_name: senderName || '',
                 sender_role: senderRole || '',
                 content,
+                read_by: [senderId],
                 created_at: new Date().toISOString()
             }])
             .select()
@@ -47,8 +48,7 @@ export async function POST(request: NextRequest) {
 
         await supabase.from('conversations').update({
             last_message: content,
-            last_message_at: new Date().toISOString(),
-            last_sender_name: senderName || ''
+            last_message_at: new Date().toISOString()
         }).eq('id', conversationId);
 
         return NextResponse.json(data);

@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
         const { data, error } = await supabase
             .from('conversations')
             .select('*')
-            .contains('participant_ids', [userId])
+            .contains('participants', [userId])
             .order('last_message_at', { ascending: false });
 
         if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -33,14 +33,14 @@ export async function POST(request: NextRequest) {
         const { data: existing } = await supabase
             .from('conversations')
             .select('*')
-            .contains('participant_ids', participantIds)
+            .contains('participants', participantIds)
             .limit(1);
 
         if (existing && existing.length > 0) return NextResponse.json(existing[0]);
 
         const { data, error } = await supabase
             .from('conversations')
-            .insert([{ participant_ids: participantIds, last_message_at: new Date().toISOString() }])
+            .insert([{ participants: participantIds, last_message_at: new Date().toISOString() }])
             .select()
             .single();
 

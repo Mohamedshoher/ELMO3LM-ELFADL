@@ -110,10 +110,21 @@ export default function StudentList({ groupId, customTitle }: StudentListProps) 
     const [studentToEdit, setStudentToEdit] = useState<Student | null>(null);
     const [selectedTab, setSelectedTab] = useState('attendance');
     const [filter, setFilter] = useState('الكل');
+    const [courseFilter, setCourseFilter] = useState('الكل');
     const [searchTerm, setSearchTerm] = useState('');
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [scheduleFilterTime, setScheduleFilterTime] = useState('الكل');
+
+    const studentCourses = useMemo(() => {
+        if (!students || !groups || !courses) return [];
+        const courseIds = new Set<string>();
+        students.forEach((s: any) => {
+            const group = groups.find((g: any) => g.id === s.groupId);
+            if (group?.courseId) courseIds.add(group.courseId);
+        });
+        return courses.filter((c: any) => courseIds.has(c.id));
+    }, [students, groups, courses]);
 
     const [selectedDate, setSelectedDate] = useState(() => {
         const d = new Date();
@@ -271,6 +282,11 @@ export default function StudentList({ groupId, customTitle }: StudentListProps) 
                 matchesFilter = phone.length < 11;
             }
 
+            if (courseFilter !== 'الكل') {
+                const group = groups?.find((g: any) => g.id === student.groupId);
+                if (group?.courseId !== courseFilter) matchesFilter = false;
+            }
+
             if (scheduleFilterTime !== 'الكل') {
                 let hasTime = false;
                 if (student.appointment) {
@@ -308,7 +324,7 @@ export default function StudentList({ groupId, customTitle }: StudentListProps) 
             if (groupA !== groupB) return groupA.localeCompare(groupB, 'ar');
             return a.fullName.localeCompare(b.fullName, 'ar');
         });
-    }, [students, user, myGroupsIds, searchTerm, filter, scheduleFilterTime, currentDayName, groupId, getGroupName]);
+    }, [students, user, myGroupsIds, searchTerm, filter, courseFilter, scheduleFilterTime, currentDayName, groupId, getGroupName, groups]);
 
     const handleOpenModal = (student: Student, tab: string = 'attendance') => {
         setSelectedTab(tab);
@@ -563,6 +579,37 @@ export default function StudentList({ groupId, customTitle }: StudentListProps) 
                                                 >
                                                     أرقام ناقصة
                                                 </button>
+
+                                                {/* --- فلتر الدورات --- */}
+                                                {studentCourses.length > 0 && (
+                                                    <div className="mt-2 pt-2 border-t border-gray-50 space-y-1">
+                                                        <div className="px-3 py-1 flex items-center justify-between">
+                                                            <span className="text-[10px] font-black text-gray-400 uppercase">الدورات</span>
+                                                            <BookOpen size={10} className="text-gray-400" />
+                                                        </div>
+                                                        <button
+                                                            onClick={() => { setCourseFilter('الكل'); setIsFilterOpen(false); }}
+                                                            className={cn(
+                                                                "w-full text-right px-3 py-2 rounded-xl text-xs font-bold transition-colors",
+                                                                courseFilter === 'الكل' ? "bg-blue-50 text-blue-600" : "text-gray-600 hover:bg-gray-50"
+                                                            )}
+                                                        >
+                                                            كل الدورات
+                                                        </button>
+                                                        {studentCourses.map((course: any) => (
+                                                            <button
+                                                                key={course.id}
+                                                                onClick={() => { setCourseFilter(course.id); setIsFilterOpen(false); }}
+                                                                className={cn(
+                                                                    "w-full text-right px-3 py-2 rounded-xl text-xs font-bold transition-colors",
+                                                                    courseFilter === course.id ? "bg-purple-50 text-purple-600" : "text-gray-600 hover:bg-gray-50"
+                                                                )}
+                                                            >
+                                                                {course.name}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                )}
 
                                                 {/* --- مدمج: فلتر الوقت --- */}
                                                 {availableTimes.length > 0 && (

@@ -3,6 +3,7 @@
 import { Course } from '@/types';
 import { BookOpen, Play, Trash2, ExternalLink, Pencil, Book } from 'lucide-react';
 import { useDeleteCourse } from '../hooks/useCourses';
+import { useCourseCategories } from '../hooks/useCourseCategories';
 
 interface CourseCardProps {
     course: Course;
@@ -13,6 +14,8 @@ interface CourseCardProps {
 
 export default function CourseCard({ course, onClick, onEdit, canModify = true }: CourseCardProps) {
     const deleteMutation = useDeleteCourse();
+    const { data: categories = [] } = useCourseCategories();
+    const categoryName = categories.find(c => c.id === course.categoryId)?.name;
 
     const handleDelete = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -77,6 +80,14 @@ export default function CourseCard({ course, onClick, onEdit, canModify = true }
                         <span className="font-bold">{course.lecturesCount} محاضرات</span>
                     </div>
                 </div>
+
+                {categoryName && (
+                    <div className="mb-3">
+                        <span className="text-[10px] font-bold text-purple-600 bg-purple-50 border border-purple-100 px-2.5 py-1 rounded-lg">
+                            {categoryName}
+                        </span>
+                    </div>
+                )}
 
                 <div className="flex items-center gap-2 flex-wrap">
                     <a

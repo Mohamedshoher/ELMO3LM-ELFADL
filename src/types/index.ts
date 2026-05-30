@@ -105,12 +105,19 @@ export interface FinancialTransaction {
   performedBy: string; // User ID (Admin/Supervisor)
 }
 
+export interface CourseCategory {
+  id: string;
+  name: string;
+  createdAt: string;
+}
+
 export interface Course {
   id: string;
   name: string;
   lecturesCount: number;
   link: string;
   bookLink?: string;
+  categoryId?: string;
   createdAt: string;
 }
 
