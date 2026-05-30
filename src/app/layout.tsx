@@ -14,6 +14,10 @@ export const metadata: Metadata = {
   title: "المعلم الفاضل",
   description: "نظام إدارة متكامل للحلقات القرآنية والمؤسسات التعليمية",
   manifest: "/manifest.json",
+  icons: {
+    icon: "/icon.svg",
+    apple: "/icon-192.png",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
