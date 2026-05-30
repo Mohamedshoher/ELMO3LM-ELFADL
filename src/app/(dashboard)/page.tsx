@@ -18,7 +18,8 @@ import {
     Calendar,
     MessageSquare,
     Trophy,
-    GraduationCap
+    GraduationCap,
+    BookOpen
 } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { FadeIn, SlideIn } from '@/components/ui/transition';
@@ -29,6 +30,7 @@ import { getGroups } from '@/features/groups/services/groupService';
 import { getTransactionsByMonth } from '@/features/finance/services/financeService';
 import { getLeaveRequests, updateLeaveRequest, LeaveRequest, getAllStudentNotesWithDetails, deleteStudentNote, markNoteAsRead } from '@/features/students/services/recordsService';
 import { useStudents } from '@/features/students/hooks/useStudents';
+import { useCourses } from '@/features/courses/hooks/useCourses';
 import dynamic from 'next/dynamic';
 const StudentNotesModal = dynamic(() => import('@/features/finance/components/StudentNotesModal'), { ssr: false });
 const StudentDetailModal = dynamic(() => import('@/features/students/components/StudentDetailModal'), { ssr: false });
@@ -147,6 +149,7 @@ export default function DashboardOverview() {
     });
 
     const pendingJoinRequests = joinRequests.filter((r: any) => r.status === 'pending');
+    const { data: courses = [] } = useCourses();
 
     const stats = [
         {
@@ -181,6 +184,17 @@ export default function DashboardOverview() {
             shadow: 'shadow-orange-500/10',
             roles: ['director', 'supervisor', 'teacher'],
             link: '/groups'
+        },
+        {
+            title: 'الدورات',
+            value: courses.length.toString(),
+            icon: BookOpen,
+            color: 'from-purple-500 to-purple-600',
+            lightBg: 'bg-purple-50',
+            border: 'border-purple-200',
+            shadow: 'shadow-purple-500/10',
+            roles: ['director', 'supervisor', 'teacher'],
+            link: '/courses'
         },
         {
             title: 'طلاب جدد',
