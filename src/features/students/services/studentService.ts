@@ -63,6 +63,8 @@ export const updateStudent = async (id: string, data: Partial<Student>): Promise
         if (data.enrollmentDate) updates.enrollment_date = data.enrollmentDate;
         if (data.archivedDate) updates.archived_date = data.archivedDate;
         if ((data as any).courseRegisteredAt !== undefined) updates.course_registered_at = (data as any).courseRegisteredAt;
+        if ((data as any).courseCompletedAt !== undefined) updates.course_completed_at = (data as any).courseCompletedAt;
+        if ((data as any).courseFinalGrade !== undefined) updates.course_final_grade = (data as any).courseFinalGrade;
 
         const { error } = await supabase
             .from('students')

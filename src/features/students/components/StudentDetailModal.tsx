@@ -1,12 +1,11 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { X, Calendar, CreditCard, BookOpen, FileText, Clock, Award, Headphones } from 'lucide-react';
+import { X, Calendar, CreditCard, BookOpen, FileText, Award, Headphones } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import { useStudents } from '../hooks/useStudents';
 import { useStudentRecords } from '../hooks/useStudentRecords';
 import { StudentDetailModalProps } from '../hooks/types';
-import dynamic from 'next/dynamic';
 
 // استيراد المكونات الفرعية
 import ModalHeader from './ModalHeader';
@@ -14,7 +13,6 @@ import AttendanceTab from './AttendanceTab';
 import FeesTab from './FeesTab';
 import ExamsTab from './ExamsTab';
 
-const ScheduleTab = dynamic(() => import('./ScheduleTab'), { ssr: false });
 import CoursesTab from './CoursesTab';
 import NotesTab from './NotesTab';
 import FollowUpTab from './FollowUpTab';
@@ -78,7 +76,6 @@ export default function StudentDetailModal({
     // تعريف التبويبات (الأزرار العلوية)
     const tabs = [
         { id: 'attendance', label: 'سجل الحضور', icon: Calendar },
-        { id: 'schedule', label: 'مواعيد الحضور', icon: Clock },
         { id: 'courses', label: 'الدورات', icon: Award },
         { id: 'followup', label: 'المتابعات', icon: Headphones },
         { id: 'exams', label: 'سجل الاختبارات', icon: BookOpen },
@@ -119,11 +116,10 @@ export default function StudentDetailModal({
                 {/* 3. محتوى التبويبات (يتم استدعاء المكون بناءً على التبويب النشط) */}
                 <div className="flex-1 overflow-y-auto p-5 md:p-6 text-right">
                     {activeTab === 'attendance' && <AttendanceTab student={student} records={studentRecords} />}
-                    {activeTab === 'schedule' && <ScheduleTab student={student} />}
                     {activeTab === 'fees' && <FeesTab student={student} records={studentRecords} />}
                     {activeTab === 'exams' && <ExamsTab student={student} records={studentRecords} />}
                     {activeTab === 'notes' && <NotesTab student={student} records={studentRecords} />}
-                    {activeTab === 'courses' && <CoursesTab student={student} />}
+                    {activeTab === 'courses' && <CoursesTab student={student} records={studentRecords} />}
                     {activeTab === 'followup' && <FollowUpTab student={student} records={studentRecords} />}
                 </div>
             </SlideIn>
