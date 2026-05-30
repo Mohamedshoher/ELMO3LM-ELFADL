@@ -43,9 +43,12 @@ export default function FollowUpTab({ student, records }: any) {
     const [lecturesCount, setLecturesCount] = useState(1);
     const [notes, setNotes] = useState('');
 
+    const remaining = Math.max(0, totalLectures - totalListened);
+
     const handleAdd = () => {
         if (!course) return alert('الطالب غير مسجل في دورة');
         if (lecturesCount < 1) return alert('عدد المحاضرات يجب أن يكون 1 على الأقل');
+        if (lecturesCount > remaining) return alert(`لا يمكن تجاوز عدد محاضرات الدورة. المتبقي: ${remaining} محاضرات`);
         addListen.mutate({
             studentId: student.id,
             courseId: course.id,

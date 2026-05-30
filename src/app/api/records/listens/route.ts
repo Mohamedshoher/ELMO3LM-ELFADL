@@ -28,6 +28,35 @@ export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
         const supabase = createServerSupabase();
+
+        if (body.course_id) {
+            const { data: course, error: courseError } = await supabase
+                .from('courses')
+                .select('lectures_count')
+                .eq('id', body.course_id)
+                .single();
+
+            if (courseError) return NextResponse.json({ error: courseError.message }, { status: 500 });
+
+            const { data: existingListens, error: listensError } = await supabase
+                .from('student_listens')
+                .select('lectures_count')
+                .eq('student_id', body.student_id)
+                .eq('course_id', body.course_id);
+
+            if (listensError) return NextResponse.json({ error: listensError.message }, { status: 500 });
+
+            const totalListened = (existingListens || []).reduce((sum: number, l: any) => sum + (l.lectures_count || 0), 0);
+            const remaining = (course?.lectures_count || 0) - totalListened;
+
+            if ((body.lectures_count || 0) > remaining) {
+                return NextResponse.json(
+                    { error: `لا يمكن تجاوز عدد محاضرات الدورة. المتبقي: ${remaining} محاضرات` },
+                    { status: 400 }
+                );
+            }
+        }
+
         const { data, error } = await supabase.from('student_listens').insert([body]).select().single();
         if (error) return NextResponse.json({ error: error.message }, { status: 500 });
         return NextResponse.json(data);

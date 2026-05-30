@@ -60,8 +60,8 @@ export default function CourseDetailModal({ course, isOpen, onClose }: Props) {
     });
 
     const allTabs = [
-        { id: 'students' as const, label: 'الطلاب المشتركين', icon: Users },
-        { id: 'teachers' as const, label: 'مقارنة المدرسين', icon: GraduationCap },
+        { id: 'students' as const, label: 'المشتركين', icon: Users },
+        { id: 'teachers' as const, label: 'مقارنة', icon: GraduationCap },
         { id: 'followup' as const, label: 'المتابعات', icon: Headphones },
     ];
     const tabs = isTeacher ? allTabs.filter(t => t.id !== 'teachers') : allTabs;

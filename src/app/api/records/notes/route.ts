@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
             .select('*, students!inner(full_name, parent_phone, group_id, groups!inner(name, teacher_id, teachers!inner(full_name)))');
 
         if (studentId) query = query.eq('student_id', studentId);
-        query = query.eq('students.status', 'active').order('created_at', { ascending: false }).limit(limit);
+        query = query.neq('type', 'join_request').eq('students.status', 'active').order('created_at', { ascending: false }).limit(limit);
 
         const { data, error } = await query;
         if (error) return NextResponse.json({ error: error.message }, { status: 500 });

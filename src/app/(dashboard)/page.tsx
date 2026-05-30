@@ -17,7 +17,8 @@ import {
     X as CloseIcon,
     Calendar,
     MessageSquare,
-    Trophy
+    Trophy,
+    GraduationCap
 } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { FadeIn, SlideIn } from '@/components/ui/transition';
@@ -32,6 +33,7 @@ import dynamic from 'next/dynamic';
 const StudentNotesModal = dynamic(() => import('@/features/finance/components/StudentNotesModal'), { ssr: false });
 const StudentDetailModal = dynamic(() => import('@/features/students/components/StudentDetailModal'), { ssr: false });
 const EditStudentModal = dynamic(() => import('@/features/students/components/EditStudentModal'), { ssr: false });
+const JoinRequestsModal = dynamic(() => import('@/features/courses/components/JoinRequestsModal'), { ssr: false });
 import { supabase } from '@/lib/supabase';
 import { Student, Group, FinancialTransaction } from '@/types';
 import { useRouter } from 'next/navigation';
@@ -46,6 +48,7 @@ export default function DashboardOverview() {
     const [isSyncing, setIsSyncing] = useState(false);
     const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false);
     const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
+    const [isJoinRequestsOpen, setIsJoinRequestsOpen] = useState(false);
     const [selectedStudentForDetail, setSelectedStudentForDetail] = useState<Student | null>(null);
     const [selectedStudentForEdit, setSelectedStudentForEdit] = useState<Student | null>(null);
     const queryClient = useQueryClient();
@@ -133,6 +136,18 @@ export default function DashboardOverview() {
         enabled: user?.role === 'director' || user?.role === 'supervisor'
     });
 
+    const { data: joinRequests = [] } = useQuery({
+        queryKey: ['join-requests'],
+        queryFn: async () => {
+            const res = await fetch('/api/join-requests');
+            if (!res.ok) return [];
+            return res.json();
+        },
+        enabled: user?.role === 'director' || user?.role === 'supervisor'
+    });
+
+    const pendingJoinRequests = joinRequests.filter((r: any) => r.status === 'pending');
+
     const stats = [
         {
             title: user?.role === 'teacher' ? 'طلابي' : 'إجمالي الطلاب',
@@ -215,6 +230,17 @@ export default function DashboardOverview() {
             shadow: 'shadow-blue-500/10',
             roles: ['director', 'supervisor'],
             onClick: () => setIsNotesModalOpen(true)
+        },
+        {
+            title: 'طلبات الانضمام',
+            value: pendingJoinRequests.length.toString(),
+            icon: GraduationCap,
+            color: 'from-emerald-500 to-teal-600',
+            lightBg: 'bg-emerald-50',
+            border: 'border-emerald-200',
+            shadow: 'shadow-emerald-500/10',
+            roles: ['director', 'supervisor'],
+            onClick: () => setIsJoinRequestsOpen(true)
         },
 
     ].filter(s => s.roles.includes(user?.role || ''));
@@ -448,6 +474,12 @@ export default function DashboardOverview() {
                 isOpen={!!selectedStudentForEdit}
                 onClose={() => setSelectedStudentForEdit(null)}
                 student={selectedStudentForEdit}
+            />
+
+            {/* نافذة طلبات الانضمام للدورات */}
+            <JoinRequestsModal
+                isOpen={isJoinRequestsOpen}
+                onClose={() => setIsJoinRequestsOpen(false)}
             />
         </div>
     );

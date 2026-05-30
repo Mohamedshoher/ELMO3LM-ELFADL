@@ -665,6 +665,29 @@ export const getAllListens = async (monthKey?: string, periodHalf?: 1 | 2, stude
 };
 
 export const addListenRecord = async (record: Omit<ListenRecord, 'id'>): Promise<ListenRecord> => {
+    if (record.courseId) {
+        const { data: course, error: courseError } = await supabase
+            .from('courses')
+            .select('lectures_count')
+            .eq('id', record.courseId)
+            .single();
+
+        if (courseError) throw courseError;
+
+        const { data: existingListens } = await supabase
+            .from('student_listens')
+            .select('lectures_count')
+            .eq('student_id', record.studentId)
+            .eq('course_id', record.courseId);
+
+        const totalListened = (existingListens || []).reduce((sum, l) => sum + (l.lectures_count || 0), 0);
+        const remaining = (course?.lectures_count || 0) - totalListened;
+
+        if (record.lecturesCount > remaining) {
+            throw new Error(`لا يمكن تجاوز عدد محاضرات الدورة. المتبقي: ${remaining} محاضرات`);
+        }
+    }
+
     const { data, error } = await supabase
         .from('student_listens')
         .insert([{

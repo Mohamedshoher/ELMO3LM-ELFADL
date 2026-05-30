@@ -11,7 +11,8 @@ import { ParentChatModal } from "@/features/chat/components/ParentChatModal";
 import { ParentStudentDetailModal } from "@/features/students/components/ParentStudentDetailModal";
 import {
     LogOut, Home, User, Calendar, ChevronLeft, AlertCircle, MessageCircle, X,
-    BookOpen, TrendingUp, Clock, Award, Headphones, BarChart3, ExternalLink, Book
+    BookOpen, TrendingUp, Clock, Award, Headphones, BarChart3, ExternalLink, Book,
+    GraduationCap, PlusCircle
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { logout } from "@/features/auth/services/authService";
@@ -113,6 +114,11 @@ export default function ParentDashboard() {
                         </div>
                     </div>
 
+                    <button onClick={() => router.push('/parent/courses')}
+                        className="flex items-center gap-2 px-3.5 py-2 bg-emerald-50 text-emerald-600 rounded-xl text-[11px] font-black hover:bg-emerald-600 hover:text-white transition-all active:scale-95">
+                        <GraduationCap size={15} />
+                        <span className="hidden sm:inline">الدورات</span>
+                    </button>
                     <button onClick={() => setIsChatOpen(true)}
                         className={cn("relative flex items-center gap-2 px-3.5 py-2 bg-emerald-50 text-emerald-600 rounded-xl text-[11px] font-black hover:bg-emerald-600 hover:text-white transition-all active:scale-95", showPulse && "animate-bounce")}>
                         <MessageCircle size={15} />
@@ -343,7 +349,12 @@ function StudentCard({ kid, groups, courses: allCourses, teachers, onSelect, onL
                     </div>
                 ) : (
                     <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100 mb-4 text-center">
-                        <p className="text-xs font-bold text-gray-400">غير مسجل في دورة</p>
+                        <p className="text-xs font-bold text-gray-400 mb-2">غير مسجل في دورة</p>
+                        <button onClick={(e) => { e.stopPropagation(); window.location.href = '/parent/courses'; }}
+                            className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-500 text-white rounded-xl text-[10px] font-black hover:bg-emerald-600 transition-all active:scale-95 shadow-lg shadow-emerald-500/20">
+                            <PlusCircle size={13} />
+                            سجل في دورة
+                        </button>
                     </div>
                 )}
 
