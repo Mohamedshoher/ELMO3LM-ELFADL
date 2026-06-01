@@ -120,13 +120,13 @@ export default function FollowUpReportPage() {
     };
 
     const getCourseLink = (courseId?: string) => {
-        if (!courseId) return null;
-        return courses?.find((c: any) => c.id === courseId)?.link || null;
+        if (!courseId) return undefined;
+        return courses?.find((c: any) => c.id === courseId)?.link || undefined;
     };
 
     const getCourseBookLink = (courseId?: string) => {
-        if (!courseId) return null;
-        return courses?.find((c: any) => c.id === courseId)?.bookLink || null;
+        if (!courseId) return undefined;
+        return courses?.find((c: any) => c.id === courseId)?.bookLink || undefined;
     };
 
     const getCourseLecturesCount = (courseId?: string) => {
