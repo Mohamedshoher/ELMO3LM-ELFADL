@@ -85,19 +85,19 @@ export default function CoursesTab({ student, records }: any) {
                         </span>
                     </div>
 
-                    <div className="flex flex-wrap gap-2 mb-4">
+                    <div className="flex flex-wrap gap-3 mb-4">
                         {course.link && (
                             <a href={course.link} target="_blank" rel="noopener noreferrer"
-                                className="px-3 py-1 rounded-xl text-xs font-bold bg-gray-50 text-gray-600 border border-gray-100 flex items-center gap-1.5 hover:bg-gray-100 transition-colors">
-                                <ExternalLink size={14} />
-                                فتح الرابط
+                                className="px-5 py-3 rounded-2xl text-sm font-bold bg-blue-600 text-white border border-blue-600 flex items-center gap-2 hover:bg-blue-700 transition-all shadow-lg shadow-blue-200">
+                                <ExternalLink size={18} />
+                                رابط الدورة
                             </a>
                         )}
                         {course.bookLink && (
                             <a href={course.bookLink} target="_blank" rel="noopener noreferrer"
-                                className="px-3 py-1 rounded-xl text-xs font-bold bg-amber-50 text-amber-600 border border-amber-100 flex items-center gap-1.5 hover:brightness-95 transition-colors">
-                                <Book size={14} />
-                                الكتاب
+                                className="px-5 py-3 rounded-2xl text-sm font-bold bg-amber-500 text-white border border-amber-500 flex items-center gap-2 hover:bg-amber-600 transition-all shadow-lg shadow-amber-200">
+                                <Book size={18} />
+                                رابط الكتاب
                             </a>
                         )}
                     </div>

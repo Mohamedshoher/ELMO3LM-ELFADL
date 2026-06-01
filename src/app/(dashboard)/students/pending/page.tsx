@@ -1,13 +1,14 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getStudents, updateStudent, deleteStudent } from '@/features/students/services/studentService';
 import { getGroups } from '@/features/groups/services/groupService';
 import { UserCheck, UserX, Edit2, Trash2, Users, Calendar, Phone, MapPin, CreditCard, MessageSquare, BookOpen, MessageCircle } from 'lucide-react';
 
+import { useTeachers } from '@/features/teachers/hooks/useTeachers';
 import { cn, getWhatsAppUrl } from '@/lib/utils';
-import { Student, Group } from '@/types';
+import { Student, Group, Teacher } from '@/types';
 
 export default function PendingStudentsPage() {
     const queryClient = useQueryClient();
@@ -25,6 +26,16 @@ export default function PendingStudentsPage() {
         queryFn: () => getGroups()
     });
 
+    const { data: teachers = [] } = useTeachers();
+
+    const teacherMap = useMemo(() => {
+        const map: Record<string, string> = {};
+        teachers.forEach((t: Teacher) => {
+            if (t.id) map[t.id] = t.fullName;
+        });
+        return map;
+    }, [teachers]);
+
     const pendingStudents = allStudents.filter(s => s.status === 'pending');
     
     const recentStudents = allStudents.filter(s => {
@@ -38,7 +49,7 @@ export default function PendingStudentsPage() {
             const diffTime = today.getTime() - enrollDate.getTime();
             const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
             
-            return diffDays <= 2 && diffDays >= 0; // Today, yesterday, and the day before
+            return diffDays <= 7 && diffDays >= 0; // آخر 7 أيام
         }
         return false;
     }).sort((a, b) => {
@@ -48,30 +59,32 @@ export default function PendingStudentsPage() {
     });
 
     const handleWelcomeWhatsApp = (student: Student) => {
-        const phone = student.parentPhone || student.studentPhone || '';
+        const phone = student.studentPhone || student.parentPhone || '';
         const password = phone.length >= 6 ? phone.slice(-6) : phone;
-        const message = `السلام عليكم ورحمة الله وبركاته، 🌸
-أهلاً بكم في المعلم الفاضل لتحفيظ القرآن الكريم! 📖
+        const group = groups.find(g => g.id === student.groupId);
+        const courseName = group?.courseName || '';
+        const teacherName = group?.teacherId ? teacherMap[group.teacherId] : '';
+        const message = `السلام عليكم ورحمة الله وبركاته 🌸
 
-يسعدنا انضمام الطالب/ة: *${student.fullName}* إلينا. 🎉
+🎉🎊 *أهلاً وسهلاً بك يا ${student.fullName}* 🎊🎉
 
-💰 *تفاصيل المصروفات:*
-قيمة الاشتراك الشهري هي *${student.monthlyAmount ?? 0} ج.م* للمجموعة الواحدة.
-⚠️ *تنبيه مهم:* تُستحق المصروفات مقدماً مع أول يوم من كل شهر.
+يسعدنا انضمامك إلى أسرة *المعلم الفاضل* لتحفيظ القرآن الكريم 📖💚
+*المعلم المشرف: ${teacherName || 'سيتم تحديد المعلم لاحقاً'}*
 
-🚫 *الغياب والاعتذار:*
-في حال الرغبة في التغيب، لابد من إرسال اعتذار مسبق عبر رسالة على الواتساب أو من خلال موقعنا الإلكتروني.
+📚 *الدورة المسجل فيها:*
+✨ *${courseName || 'سيتم تحديد الدورة قريباً'}* ✨
 
-🌐 *بوابة ولي الأمر:*
-لمتابعة مستوى الطالب، تقارير الحفظ، وسجل الحضور والغياب، يرجى الدخول إلى حسابكم عبر الرابط التالي:
-🔗 https://shatpycenter-um2b.vercel.app/attendance-report
+🗓️ *نتمنى لك رحلة قرآنية مليئة بالجد والاجتهاد والتميز* 🌟
 
-📱 *طريقة الدخول:*
-- *اسم المستخدم:* رقم الهاتف المسجل لدينا (${phone}).
-- *كلمة المرور:* آخر 6 أرقام من رقم الهاتف (${password}).
+🌐 *لمتابعة مستواك والحضور والاختبارات عبر موقعنا:*
+🔗 https://al-moallem-al-fadel.vercel.app/login
 
-متابعتكم المستمرة عبر الموقع تساهم بشكل كبير في تشجيع الطالب ورفع مستواه. 🌟
-نسأل الله التوفيق لأبنائنا جميعاً. 🤲`;
+📱 *طريقة الدخول للموقع:*
+👤 *اسم المستخدم:* ${phone}
+🔑 *كلمة المرور:* ${password} (آخر 6 أرقام من رقم هاتفك)
+
+نتمنى لك التوفيق والنجاح 🏆💪
+مع تحيات إدارة المعلم الفاضل 🌹🤲`;
 
         window.open(getWhatsAppUrl(phone, message), '_blank');
     };
@@ -233,6 +246,78 @@ export default function PendingStudentsPage() {
                     </div>
                 )}
             </div>
+
+            {/* Recently Enrolled Students */}
+            {recentStudents.length > 0 && (
+                <div className="space-y-4 mb-8">
+                    <div className="flex items-center justify-between px-2">
+                        <h2 className="text-xl font-black text-gray-900 border-r-4 border-teal-400 pr-2">
+                            المنضمون حديثاً (آخر 7 أيام)
+                        </h2>
+                        <span className="text-sm font-bold text-teal-600 bg-teal-50 px-3 py-1 rounded-full">
+                            {recentStudents.length} طالب
+                        </span>
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                        {recentStudents.map((student) => {
+                            const group = groups.find(g => g.id === student.groupId);
+                            return (
+                                <div
+                                    key={student.id}
+                                    className="bg-white rounded-3xl p-6 shadow-sm border border-teal-100 hover:shadow-xl transition-all animate-[fadeIn_0.3s_ease-out]"
+                                >
+                                    <div className="flex items-start justify-between mb-4">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-12 h-12 bg-teal-100 rounded-xl flex items-center justify-center text-teal-600 font-black text-lg">
+                                                {student.fullName[0]}
+                                            </div>
+                                            <div>
+                                                <h3 className="text-lg font-black text-gray-900">{student.fullName}</h3>
+                                                <span className="inline-block mt-1 px-3 py-1 text-xs font-bold bg-teal-100 text-teal-600 rounded-full">
+                                                    {group?.name || 'بدون مجموعة'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={() => handleWelcomeWhatsApp(student)}
+                                            className="w-10 h-10 rounded-xl bg-green-50 text-green-600 hover:bg-green-100 flex items-center justify-center transition-colors"
+                                            title="إرسال رسالة ترحيب"
+                                        >
+                                            <MessageCircle size={18} />
+                                        </button>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                                        <div className="flex items-center gap-2 text-gray-600">
+                                            <Phone size={16} className="text-blue-500" />
+                                            <span className="font-bold">ولي الأمر:</span>
+                                            <span className="font-sans">{student.parentPhone}</span>
+                                        </div>
+                                        <div className="flex items-center gap-2 text-gray-600">
+                                            <Calendar size={16} className="text-orange-500" />
+                                            <span className="font-bold">تاريخ الالتحاق:</span>
+                                            <span>{student.enrollmentDate}</span>
+                                        </div>
+                                        {student.appointment && (
+                                            <div className="flex items-center gap-2 text-gray-600">
+                                                <BookOpen size={16} className="text-indigo-500" />
+                                                <span className="font-bold">الموعد:</span>
+                                                <span>{student.appointment}</span>
+                                            </div>
+                                        )}
+                                        {student.monthlyAmount !== undefined && (
+                                            <div className="flex items-center gap-2 text-gray-600">
+                                                <CreditCard size={16} className="text-amber-500" />
+                                                <span className="font-bold">الاشتراك:</span>
+                                                <span>{student.monthlyAmount} ج.م</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
 
             {/* Reject Modal */}
             {showRejectModal && (

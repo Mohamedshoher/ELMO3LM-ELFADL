@@ -52,9 +52,9 @@ export const ConversationList: React.FC<ConversationListProps> = ({
     const isPhoneNumber = originalName.match(/^[0-9+]+$/);
 
     if (isPhoneNumber || originalName === otherId) {
-      const parentStudents = (students || []).filter(s => s.parentPhone === otherId || s.parentPhone === originalName);
-      if (parentStudents.length > 0) {
-        return `ولي أمر ${parentStudents.map(s => s.fullName.split(' ')[0]).join(' و ')}`;
+      const matchedStudents = (students || []).filter(s => s.studentPhone === otherId || s.studentPhone === originalName || s.parentPhone === otherId || s.parentPhone === originalName);
+      if (matchedStudents.length > 0) {
+        return matchedStudents.map(s => s.fullName.split(' ')[0]).join(' و ');
       }
     }
 

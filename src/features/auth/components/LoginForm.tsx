@@ -42,8 +42,8 @@ export default function LoginForm() {
         localStorage.setItem('almoalem_last_pass', password);
 
         if (portal === 'student') {
-            const loginIdentifier = `parent-${phone}`;
-            localStorage.setItem('almoalem_parent_phone', phone);
+            const loginIdentifier = `student-${phone}`;
+            localStorage.setItem('almoalem_student_phone', phone);
             await login(loginIdentifier, password);
         } else {
             localStorage.setItem('almoalem_last_role_tab', roleTab);

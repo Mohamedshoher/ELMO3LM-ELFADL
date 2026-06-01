@@ -113,7 +113,7 @@ export default function ChatPage() {
     return tieredSearchFilter(list, searchQuery, (t) => t.fullName);
   }, [teachersList, searchQuery, user, groupsList]);
 
-  const filteredParents = useMemo(() => {
+  const filteredStudents = useMemo(() => {
     const cleanId = (id: string) => id ? id.replace('mock-', '') : '';
     const currentTeacherId = cleanId(user?.teacherId || user?.uid || '');
 
@@ -129,20 +129,21 @@ export default function ChatPage() {
       s.status === 'active' // الطلاب النشطين فقط
     );
 
-    const uniqueParents = new Map();
+    const uniqueStudents = new Map();
     myStudents.forEach(student => {
-      if (student.parentPhone && !uniqueParents.has(student.parentPhone)) {
-        uniqueParents.set(student.parentPhone, {
-          id: student.parentPhone,
-          fullName: `ولي أمر ${student.fullName}`,
+      const studentKey = student.studentPhone || student.parentPhone || student.id;
+      if (!uniqueStudents.has(studentKey)) {
+        uniqueStudents.set(studentKey, {
+          id: studentKey,
+          fullName: student.fullName,
           role: 'parent',
-          phone: student.parentPhone
+          phone: studentKey
         });
       }
     });
 
-    const parentList = Array.from(uniqueParents.values());
-    return tieredSearchFilter(parentList, searchQuery, (p: any) => p.fullName);
+    const studentList = Array.from(uniqueStudents.values());
+    return tieredSearchFilter(studentList, searchQuery, (p: any) => p.fullName);
   }, [studentsList, groupsList, searchQuery, user]);
 
   const renderSideContent = () => {
@@ -198,28 +199,28 @@ export default function ChatPage() {
     if (view === 'parents') {
       return (
         <div className="divide-y divide-gray-50">
-          {filteredParents.map((parent: any) => {
-            const initials = parent.fullName.split(' ').map((n: string) => n[0]).join('').slice(0, 2);
+          {filteredStudents.map((student: any) => {
+            const initials = student.fullName.split(' ').map((n: string) => n[0]).join('').slice(0, 2);
             return (
               <button
-                key={parent.id}
-                onClick={() => startConversation(parent)}
+                key={student.id}
+                onClick={() => startConversation(student)}
                 className="w-full p-4 flex items-center gap-4 hover:bg-gray-50 transition-all text-right group"
               >
                 <div className="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-600 font-black text-sm group-hover:bg-amber-600 group-hover:text-white transition-all shadow-sm">
                   {initials}
                 </div>
                 <div className="flex-1">
-                  <h4 className="font-black text-gray-900 text-sm">{parent.fullName}</h4>
-                  <p className="text-[10px] text-gray-400 font-bold">ولي أمر</p>
+                  <h4 className="font-black text-gray-900 text-sm">{student.fullName}</h4>
+                  <p className="text-[10px] text-gray-400 font-bold">طالب</p>
                 </div>
                 <Users size={16} className="text-gray-300 group-hover:text-amber-500 transition-colors" />
               </button>
             );
           })}
-          {filteredParents.length === 0 && (
+          {filteredStudents.length === 0 && (
             <div className="p-12 text-center">
-              <p className="text-gray-400 font-bold text-sm">لا يوجد أولياء أمور مطابقين</p>
+              <p className="text-gray-400 font-bold text-sm">لا يوجد طلاب مطابقين</p>
             </div>
           )}
         </div>

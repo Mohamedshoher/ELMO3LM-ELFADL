@@ -103,7 +103,7 @@ export default function AddStudentModal({ isOpen, onClose, defaultGroupId }: Add
                         required
                     />
                     <Input
-                        label="رقم هاتف ولي الأمر"
+                        label="رقم هاتف الطالب"
                         type="tel"
                         placeholder="0123456789"
                         value={formData.parentPhone}

@@ -32,11 +32,11 @@ export const loginWithRole = async (identifier: string, password: string): Promi
     } else if (identifier.startsWith('supervisor-')) {
         role = 'supervisor';
         teacherId = identifier.replace('supervisor-', '');
-    } else if (identifier.startsWith('parent-')) {
+    } else if (identifier.startsWith('student-')) {
         role = 'parent';
-        phone = identifier.replace('parent-', '');
+        phone = identifier.replace('student-', '');
     } else if (/^\d{10,14}$/.test(identifier)) {
-        // إذا كان المدخل رقماً فقط، نعتبره تلقائياً ولي أمر
+        // إذا كان المدخل رقماً فقط، نعتبره تلقائياً طالب
         role = 'parent';
         phone = identifier;
     }
@@ -47,35 +47,99 @@ export const loginWithRole = async (identifier: string, password: string): Promi
     }
 
     // تعيين اسم افتراضي للعرض
-    let displayName = role === 'director' ? 'المدير العام' : role === 'supervisor' ? 'المشرف التربوي' : role === 'parent' ? (phone || 'ولي أمر') : 'معلم المجموعة';
+    let displayName = role === 'director' ? 'المدير العام' : role === 'supervisor' ? 'المشرف التربوي' : role === 'parent' ? (phone || 'طالب') : 'معلم المجموعة';
 
-    // --- 3. التحقق من دخول ولي الأمر (عبر قاعدة البيانات) ---
+    // --- 3. التحقق من دخول الطالب (عبر قاعدة البيانات) ---
     if (role === 'parent' && phone) {
-        // البحث عن الهاتف في جدول الطلاب (مع أو بدون بادئة 02)
-        const { data: students, error } = await supabase
+        // تجريد الرقم من كل الرموز غير الرقمية
+        const digits = phone.replace(/[^0-9]/g, '');
+
+        // توليد جميع الصيغ المصرية الممكنة
+        const formats = new Set<string>();
+        formats.add(digits);
+
+        // آخر 11 رقم (يلتقط أي صيغة)
+        if (digits.length > 11) formats.add(digits.slice(-11));
+        // آخر 10 أرقام مع 0 (فقدان الصفر الأول)
+        if (digits.length > 10) formats.add('0' + digits.slice(-10));
+        // آخر 10 أرقام مع 2 (دولي بدون البادئة)
+        if (digits.length > 10) formats.add('2' + digits.slice(-10));
+
+        // صيغة محمول مصري 11 رقم (01XXXXXXXXX)
+        if (digits.length === 11 && digits.startsWith('01')) {
+            formats.add('2' + digits);
+            formats.add('+2' + digits);
+            formats.add('002' + digits);
+        }
+
+        // صيغة دولية 12 رقم (20XXXXXXXXXX)
+        if (digits.length === 12 && digits.startsWith('2')) {
+            formats.add('0' + digits.slice(2));
+            formats.add('+' + digits);
+            formats.add('00' + digits);
+            formats.add('+20 ' + digits.slice(2, 4) + ' ' + digits.slice(4));
+            formats.add('+20' + digits.slice(2, 4) + ' ' + digits.slice(4));
+        }
+
+        // صيغة مبتدئة بـ 20 بعد التجريد
+        if (digits.startsWith('20')) {
+            const local = '0' + digits.slice(2);
+            if (local.length === 11) formats.add(local);
+        }
+
+        // البحث برقم الطالب أولاً، ثم برقم ولي الأمر
+        let { data: students, error } = await supabase
             .from('students')
-            .select('parent_phone')
-            .or(`parent_phone.eq.${phone},parent_phone.eq.02${phone}`)
+            .select('full_name, student_phone, parent_phone')
+            .in('student_phone', Array.from(formats))
             .limit(1);
+
+        if (!students || students.length === 0) {
+            const result = await supabase
+                .from('students')
+                .select('full_name, student_phone, parent_phone')
+                .in('parent_phone', Array.from(formats))
+                .limit(1);
+            students = result.data;
+            error = result.error;
+        }
+
+        if (!students || students.length === 0) {
+            // محاولة بحث أوسع: نجلب جميع الطلاب ونطابق بتجريد الأرقام
+            const { data: allStudents } = await supabase
+                .from('students')
+                .select('full_name, student_phone, parent_phone')
+                .limit(500);
+
+            const matched = (allStudents || []).find(s => {
+                const studentDigits = (s.student_phone || '').replace(/[^0-9]/g, '');
+                const parentDigits = (s.parent_phone || '').replace(/[^0-9]/g, '');
+                return studentDigits === digits || studentDigits === digits.slice(-11) || studentDigits === '0' + digits.slice(-10) ||
+                    parentDigits === digits || parentDigits === digits.slice(-11) || parentDigits === '0' + digits.slice(-10);
+            });
+
+            if (!matched) {
+                throw new Error("عذراً، هذا الرقم غير مسجل لدينا كطالب");
+            }
+
+            students = [matched];
+        }
 
         if (error) {
             console.error("Supabase Error:", error);
             throw new Error("حدث خطأ أثناء الاتصال بقاعدة البيانات");
         }
 
-        if (!students || students.length === 0) {
-            throw new Error("عذراً، هذا الرقم غير مسجل لدينا كولي أمر");
-        }
-
-        const dbPhone = students[0].parent_phone || phone;
-        const last6Digits = dbPhone.slice(-6); // استخراج آخر 6 أرقام لتكون كلمة المرور الافتراضية
+        const dbStudent = students[0];
+        const dbPhone = dbStudent.student_phone || dbStudent.parent_phone || phone;
+        const last6Digits = dbPhone.slice(-6);
 
         // السماح بالدخول بكلمة 123456 أو آخر 6 أرقام من الهاتف
         if (password !== last6Digits && password !== '123456') {
             throw new Error(`كلمة المرور غير صحيحة. يرجى استخدام آخر 6 أرقام من رقم هاتفك المسجل.`);
         }
 
-        displayName = dbPhone;
+        displayName = dbStudent.full_name || dbPhone;
     }
 
     // --- 4. التحقق من دخول المعلم أو المشرف (عبر قاعدة البيانات) ---

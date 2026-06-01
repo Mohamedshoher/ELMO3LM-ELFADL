@@ -91,7 +91,7 @@ export default function EditStudentModal({ student, isOpen, onClose }: EditStude
                     />
                     {/* حقل رقم الهاتف */}
                     <Input
-                        label="رقم هاتف ولي الأمر"
+                        label="رقم هاتف الطالب"
                         type="tel"
                         placeholder="0123456789"
                         value={formData.parentPhone}

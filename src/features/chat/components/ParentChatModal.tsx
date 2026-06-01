@@ -27,9 +27,7 @@ export const ParentChatModal: React.FC<ParentChatModalProps> = ({ isOpen, onClos
     const userId = user?.uid || '';
     const userRole = 'parent';
 
-    const parentDescriptiveName = (students || []).filter(s => s.parentPhone === user?.displayName).length > 0
-        ? `ولي أمر ${(students || []).filter(s => s.parentPhone === user?.displayName).map(k => k.fullName).join(' و ')}`
-        : user?.displayName || 'ولي أمر';
+    const studentDescriptiveName = user?.displayName || '';
 
     const {
         conversations,
@@ -39,22 +37,19 @@ export const ParentChatModal: React.FC<ParentChatModalProps> = ({ isOpen, onClos
         sending,
         selectConversation,
         sendMessage,
-    } = useChat(userId, userRole, parentDescriptiveName);
+    } = useChat(userId, userRole, studentDescriptiveName);
 
     const startConversation = async (contact: any) => {
         if (!user) return;
 
-        // تجهيز اسم ولي الأمر بشكل وصفي (ولي أمر الطالب فلان)
-        const parentPhone = user.displayName || "";
-        const myKids = students?.filter(s => s.parentPhone === parentPhone) || [];
-        const parentDescriptiveName = myKids.length > 0
-            ? `ولي أمر ${myKids.map(k => k.fullName).join(' و ')}`
-            : parentPhone || 'ولي أمر';
+        const studentPhone = typeof window !== 'undefined' ? localStorage.getItem('almoalem_student_phone') || '' : '';
+        const myKids = students?.filter(s => s.studentPhone === studentPhone || s.fullName === user.displayName) || [];
+        const studentDescriptiveName = user.displayName || 'طالب';
 
         try {
             const convo = await chatService.getOrCreateConversation(
                 [user.uid, contact.id === 'director' ? 'director' : contact.id],
-                [parentDescriptiveName, contact.fullName],
+                [studentDescriptiveName, contact.fullName],
                 contact.id === 'director' ? 'director-teacher' : 'teacher-parent' as any
             );
             selectConversation(convo);

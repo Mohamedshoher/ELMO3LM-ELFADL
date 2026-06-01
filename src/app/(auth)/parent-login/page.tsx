@@ -14,7 +14,7 @@ export default function ParentLoginPage() {
     const [step, setStep] = useState<'phone' | 'password'>('phone');
 
     useEffect(() => {
-        const savedPhone = localStorage.getItem('almoalem_parent_phone');
+        const savedPhone = localStorage.getItem('almoalem_student_phone');
         if (savedPhone) {
             setPhone(savedPhone);
             setStep('password');
@@ -28,8 +28,8 @@ export default function ParentLoginPage() {
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
-        localStorage.setItem('almoalem_parent_phone', phone);
-        await login(`parent-${phone}`, password);
+        localStorage.setItem('almoalem_student_phone', phone);
+        await login(`student-${phone}`, password);
     };
 
     return (
@@ -47,7 +47,7 @@ export default function ParentLoginPage() {
                             <Users size={36} className="text-white" />
                         </div>
                         <h1 className="text-3xl md:text-4xl font-black text-white mb-2">المعلم الفاضل</h1>
-                        <p className="text-emerald-200/60 text-sm md:text-base font-bold">بوابة ولي الأمر</p>
+                        <p className="text-emerald-200/60 text-sm md:text-base font-bold">بوابة الطالب</p>
                     </div>
 
                     <div className="bg-white/5 backdrop-blur-xl rounded-[32px] p-6 md:p-8 shadow-2xl border border-white/10">

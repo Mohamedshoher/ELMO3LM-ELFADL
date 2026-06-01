@@ -49,8 +49,9 @@ export default function ParentCoursesPage() {
         router.push("/login");
     };
 
-    const parentPhone = user?.displayName || "";
-    const myKids = students?.filter(s => s.parentPhone === parentPhone) || [];
+    const phone = typeof window !== 'undefined' ? localStorage.getItem('almoalem_student_phone') || '' : '';
+    const studentName = user?.displayName || "";
+    const myKids = students?.filter(s => s.studentPhone === phone || s.fullName === studentName) || [];
     const selectedKid = myKids.find(k => k.id === selectedKidId) || myKids[0];
 
     useEffect(() => {

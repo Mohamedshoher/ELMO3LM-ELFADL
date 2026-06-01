@@ -28,6 +28,7 @@ export const addStudent = async (student: Omit<Student, 'id'>): Promise<string> 
                 full_name: student.fullName,
                 group_id: student.groupId,
                 parent_phone: student.parentPhone,
+                student_phone: student.parentPhone,
                 status: student.status || 'pending',
                 monthly_amount: student.monthlyAmount,
                 birth_date: student.birthDate,
@@ -53,7 +54,10 @@ export const updateStudent = async (id: string, data: Partial<Student>): Promise
         const updates: any = {};
         if (data.fullName) updates.full_name = data.fullName;
         if (data.groupId !== undefined) updates.group_id = data.groupId;
-        if (data.parentPhone) updates.parent_phone = data.parentPhone;
+        if (data.parentPhone) {
+            updates.parent_phone = data.parentPhone;
+            updates.student_phone = data.parentPhone;
+        }
         if (data.status) updates.status = data.status;
         if (data.monthlyAmount !== undefined) updates.monthly_amount = data.monthlyAmount;
         if (data.birthDate) updates.birth_date = data.birthDate;

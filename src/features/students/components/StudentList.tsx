@@ -25,7 +25,9 @@ import {
     Calendar,
     Clock,
     Headphones,
-    BarChart3
+    BarChart3,
+    ExternalLink,
+    Book
 } from 'lucide-react';
 import {
     calculateTotalAbsence,
@@ -680,22 +682,48 @@ export default function StudentList({ groupId, customTitle }: StudentListProps) 
                                             {getGroupName(student.groupId)}
                                         </span>
                                     </div>
-                                    {courseProgressMap[student.id] && (
-                                        <div className="flex items-center gap-1.5 mt-0.5">
-                                            <BarChart3 size={10} className="text-purple-400 shrink-0" />
-                                            <span className="text-[9px] sm:text-[10px] text-purple-500 font-bold truncate">
-                                                {courseProgressMap[student.id].courseName}
-                                            </span>
-                                            <span className={cn(
-                                                "text-[8px] sm:text-[9px] font-black px-1.5 py-0.5 rounded-full",
-                                                courseProgressMap[student.id].progress >= 100
-                                                    ? "bg-green-50 text-green-600"
-                                                    : "bg-purple-50 text-purple-600"
-                                            )}>
-                                                {courseProgressMap[student.id].progress}%
-                                            </span>
-                                        </div>
-                                    )}
+                                    {courseProgressMap[student.id] && (() => {
+                                        const group = groups?.find((g: any) => g.id === student.groupId);
+                                        const course = courses?.find((c: any) => c.id === group?.courseId);
+                                        return (
+                                            <div className="mt-0.5">
+                                                <div className="flex items-center gap-1.5">
+                                                    <BarChart3 size={10} className="text-purple-400 shrink-0" />
+                                                    <span className="text-[9px] sm:text-[10px] text-purple-500 font-bold truncate">
+                                                        {courseProgressMap[student.id].courseName}
+                                                    </span>
+                                                    <span className={cn(
+                                                        "text-[8px] sm:text-[9px] font-black px-1.5 py-0.5 rounded-full",
+                                                        courseProgressMap[student.id].progress >= 100
+                                                            ? "bg-green-50 text-green-600"
+                                                            : "bg-purple-50 text-purple-600"
+                                                    )}>
+                                                        {courseProgressMap[student.id].progress}%
+                                                    </span>
+                                                </div>
+                                                {(course?.link || course?.bookLink) && (
+                                                    <div className="flex items-center gap-1.5 mt-1">
+                                                        {course.link && (
+                                                            <a href={course.link} target="_blank" rel="noopener noreferrer"
+                                                                onClick={(e) => e.stopPropagation()}
+                                                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[9px] font-bold bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors">
+                                                                <ExternalLink size={10} />
+                                                                الدورة
+                                                            </a>
+                                                        )}
+                                                        {course.bookLink && (
+                                                            <a href={course.bookLink} target="_blank" rel="noopener noreferrer"
+                                                                onClick={(e) => e.stopPropagation()}
+                                                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[9px] font-bold bg-amber-50 text-amber-600 hover:bg-amber-100 transition-colors">
+                                                                <Book size={10} />
+                                                                الكتاب
+                                                            </a>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })()}
                                 </div>
                             </div>
                         </div>

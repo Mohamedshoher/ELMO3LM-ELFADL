@@ -46,8 +46,10 @@ export default function ParentDashboard() {
 
     useEffect(() => { setMounted(true); }, []);
 
-    const parentPhone = user?.displayName || "";
-    const myKids = students?.filter(s => s.parentPhone === parentPhone) || [];
+    // استخراج رقم هاتف الطالب من التخزين المحلي
+    const phone = typeof window !== 'undefined' ? localStorage.getItem('almoalem_student_phone') || '' : '';
+    const studentName = user?.displayName || "";
+    const myKids = students?.filter(s => s.studentPhone === phone || s.fullName === studentName) || [];
 
     useEffect(() => {
         if (!user?.uid) return;
@@ -346,6 +348,27 @@ function StudentCard({ kid, groups, courses: allCourses, teachers, onSelect, onL
                             <span>المستمع: {totalListened}</span>
                             <span>المحاضرات: {totalLectures}</span>
                         </div>
+                        {/* روابط الدورة والكتاب */}
+                        {(course?.link || course?.bookLink) && (
+                            <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-emerald-200/50">
+                                {course.link && (
+                                    <a href={course.link} target="_blank" rel="noopener noreferrer"
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-2xl text-sm font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-200">
+                                        <ExternalLink size={18} />
+                                        رابط الدورة
+                                    </a>
+                                )}
+                                {course.bookLink && (
+                                    <a href={course.bookLink} target="_blank" rel="noopener noreferrer"
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-amber-500 text-white rounded-2xl text-sm font-bold hover:bg-amber-600 transition-all shadow-lg shadow-amber-200">
+                                        <Book size={18} />
+                                        رابط الكتاب
+                                    </a>
+                                )}
+                            </div>
+                        )}
                     </div>
                 ) : (
                     <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100 mb-4 text-center">
@@ -389,14 +412,6 @@ function StudentCard({ kid, groups, courses: allCourses, teachers, onSelect, onL
                         عرض التفاصيل
                         <ChevronLeft size={14} />
                     </button>
-                    {course?.link && (
-                        <a href={course.link} target="_blank" rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            className="h-11 px-4 bg-white text-gray-600 text-[10px] font-black rounded-2xl flex items-center justify-center gap-1.5 active:scale-95 transition-all hover:bg-emerald-50 hover:text-emerald-600 border border-gray-100">
-                            <ExternalLink size={13} />
-                            الرابط
-                        </a>
-                    )}
                     <button onClick={(e) => { e.stopPropagation(); onLeaveRequest(); }}
                         className="h-11 px-4 bg-orange-50 text-orange-600 text-[10px] font-black rounded-2xl flex items-center justify-center gap-1.5 active:scale-95 transition-all hover:bg-orange-500 hover:text-white border border-orange-100">
                         <Calendar size={12} />
