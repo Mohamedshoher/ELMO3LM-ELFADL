@@ -21,7 +21,8 @@ import {
     Zap,
     UserCheck,
     CalendarClock,
-    BookOpen
+    BookOpen,
+    Headphones
 } from 'lucide-react';
 import { FadeIn } from '@/components/ui/transition';
 import { logout } from '@/features/auth/services/authService';
@@ -86,6 +87,12 @@ export default function Sidebar() {
             label: 'تقارير الاختبارات',
             href: '/exams-report',
             icon: FileText,
+            roles: ['director', 'supervisor', 'teacher']
+        },
+        {
+            label: 'تقارير المتابعات',
+            href: '/follow-up-report',
+            icon: Headphones,
             roles: ['director', 'supervisor', 'teacher']
         },
         {
