@@ -681,26 +681,31 @@ export default function FollowUpReportPage() {
                                     </div>
                                 </div>
                                 {/* Course & Book Links */}
-                                {(getCourseLink(student.courseId) || getCourseBookLink(student.courseId)) && (
-                                    <div className="flex gap-2 mt-2 pt-2 border-t border-gray-50">
-                                        {getCourseLink(student.courseId) && (
-                                            <a href={getCourseLink(student.courseId)} target="_blank" rel="noopener noreferrer"
-                                                onClick={(e) => e.stopPropagation()}
-                                                className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white rounded-xl text-[9px] font-bold hover:bg-blue-700 transition-all shadow-sm">
-                                                <ExternalLink size={11} />
-                                                رابط الدورة
-                                            </a>
-                                        )}
-                                        {getCourseBookLink(student.courseId) && (
-                                            <a href={getCourseBookLink(student.courseId)} target="_blank" rel="noopener noreferrer"
-                                                onClick={(e) => e.stopPropagation()}
-                                                className="flex items-center gap-1 px-3 py-1.5 bg-amber-500 text-white rounded-xl text-[9px] font-bold hover:bg-amber-600 transition-all shadow-sm">
-                                                <Book size={11} />
-                                                رابط الكتاب
-                                            </a>
-                                        )}
-                                    </div>
-                                )}
+                                {(() => {
+                                    const courseLink = getCourseLink(student.courseId);
+                                    const bookLink = getCourseBookLink(student.courseId);
+                                    if (!courseLink && !bookLink) return null;
+                                    return (
+                                        <div className="flex gap-2 mt-2 pt-2 border-t border-gray-50">
+                                            {courseLink && (
+                                                <a href={courseLink} target="_blank" rel="noopener noreferrer"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white rounded-xl text-[9px] font-bold hover:bg-blue-700 transition-all shadow-sm">
+                                                    <ExternalLink size={11} />
+                                                    رابط الدورة
+                                                </a>
+                                            )}
+                                            {bookLink && (
+                                                <a href={bookLink} target="_blank" rel="noopener noreferrer"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    className="flex items-center gap-1 px-3 py-1.5 bg-amber-500 text-white rounded-xl text-[9px] font-bold hover:bg-amber-600 transition-all shadow-sm">
+                                                    <Book size={11} />
+                                                    رابط الكتاب
+                                                </a>
+                                            )}
+                                        </div>
+                                    );
+                                })()}
                             </div>
                         ))}
                         {studentAggregateData.length === 0 && (

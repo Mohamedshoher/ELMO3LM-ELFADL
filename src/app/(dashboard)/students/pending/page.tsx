@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getStudents, updateStudent, deleteStudent } from '@/features/students/services/studentService';
 import { getGroups } from '@/features/groups/services/groupService';
@@ -63,13 +63,12 @@ export default function PendingStudentsPage() {
         const password = phone.length >= 6 ? phone.slice(-6) : phone;
         const group = groups.find(g => g.id === student.groupId);
         const courseName = group?.courseName || '';
-        const teacherName = group?.teacherId ? teacherMap[group.teacherId] : '';
         const message = `السلام عليكم ورحمة الله وبركاته 🌸
 
 🎉🎊 *أهلاً وسهلاً بك يا ${student.fullName}* 🎊🎉
 
 يسعدنا انضمامك إلى أسرة *المعلم الفاضل* لتحفيظ القرآن الكريم 📖💚
-*المعلم المشرف: ${teacherName || 'سيتم تحديد المعلم لاحقاً'}*
+*المعلم المشرف*
 
 📚 *الدورة المسجل فيها:*
 ✨ *${courseName || 'سيتم تحديد الدورة قريباً'}* ✨
