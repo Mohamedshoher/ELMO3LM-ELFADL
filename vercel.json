@@ -1,0 +1,7 @@
+{
+  "projectName": "elmo3lm-elfadl",
+  "framework": "nextjs",
+  "git": {
+    "deploymentEnabled": true
+  }
+}
