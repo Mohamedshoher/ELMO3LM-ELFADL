@@ -45,10 +45,24 @@ export default function FollowUpTab({ student, records }: any) {
 
     const remaining = Math.max(0, totalLectures - totalListened);
 
-    const handleAdd = () => {
+    const handleAdd = async () => {
         if (!course) return alert('الطالب غير مسجل في دورة');
         if (lecturesCount < 1) return alert('عدد المحاضرات يجب أن يكون 1 على الأقل');
         if (lecturesCount > remaining) return alert(`لا يمكن تجاوز عدد محاضرات الدورة. المتبقي: ${remaining} محاضرات`);
+
+        // حذف أي تسجيل غياب تلقائي لنفس اليوم
+        try {
+            const { supabase } = await import('@/lib/supabase');
+            await supabase
+                .from('attendance')
+                .delete()
+                .eq('student_id', student.id)
+                .eq('date', listenDate)
+                .eq('is_automatic', true);
+        } catch (e) {
+            console.error('Error clearing auto absence:', e);
+        }
+
         addListen.mutate({
             studentId: student.id,
             courseId: course.id,

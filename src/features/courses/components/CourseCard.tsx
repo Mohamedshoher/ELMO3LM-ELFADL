@@ -49,8 +49,14 @@ export default function CourseCard({ course, onClick, onEdit, canModify = true }
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all group cursor-pointer" onClick={onClick}>
             <div className="p-5">
                 <div className="flex items-start justify-between mb-4">
-                    <div className="w-12 h-12 bg-purple-50 rounded-2xl flex items-center justify-center shrink-0">
-                        <BookOpen size={22} className="text-purple-600" />
+                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 overflow-hidden">
+                        {course.imageUrl ? (
+                            <img src={course.imageUrl} alt={course.name} className="w-full h-full object-cover" />
+                        ) : (
+                            <div className="w-full h-full bg-purple-50 flex items-center justify-center">
+                                <BookOpen size={22} className="text-purple-600" />
+                            </div>
+                        )}
                     </div>
                     {canModify && (
                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">

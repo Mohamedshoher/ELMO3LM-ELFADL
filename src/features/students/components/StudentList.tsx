@@ -26,8 +26,6 @@ import {
     Clock,
     Headphones,
     BarChart3,
-    ExternalLink,
-    Book
 } from 'lucide-react';
 import {
     calculateTotalAbsence,
@@ -678,9 +676,7 @@ export default function StudentList({ groupId, customTitle }: StudentListProps) 
                                         <h3 className="font-bold text-gray-900 leading-tight truncate whitespace-nowrap text-lg">
                                             {student.fullName}
                                         </h3>
-                                        <span className="text-[10px] sm:text-xs text-gray-400 font-medium shrink-0">
-                                            {getGroupName(student.groupId)}
-                                        </span>
+
                                     </div>
                                     {courseProgressMap[student.id] && (() => {
                                         const group = groups?.find((g: any) => g.id === student.groupId);
@@ -701,26 +697,7 @@ export default function StudentList({ groupId, customTitle }: StudentListProps) 
                                                         {courseProgressMap[student.id].progress}%
                                                     </span>
                                                 </div>
-                                                {(course?.link || course?.bookLink) && (
-                                                    <div className="flex items-center gap-1.5 mt-1">
-                                                        {course.link && (
-                                                            <a href={course.link} target="_blank" rel="noopener noreferrer"
-                                                                onClick={(e) => e.stopPropagation()}
-                                                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[9px] font-bold bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors">
-                                                                <ExternalLink size={10} />
-                                                                الدورة
-                                                            </a>
-                                                        )}
-                                                        {course.bookLink && (
-                                                            <a href={course.bookLink} target="_blank" rel="noopener noreferrer"
-                                                                onClick={(e) => e.stopPropagation()}
-                                                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[9px] font-bold bg-amber-50 text-amber-600 hover:bg-amber-100 transition-colors">
-                                                                <Book size={10} />
-                                                                الكتاب
-                                                            </a>
-                                                        )}
-                                                    </div>
-                                                )}
+
                                             </div>
                                         );
                                     })()}

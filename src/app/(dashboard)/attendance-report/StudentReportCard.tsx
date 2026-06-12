@@ -34,6 +34,11 @@ export default function StudentReportCard({ student, index, userRole, onArchive,
             <div className="flex flex-col gap-2 border-t border-gray-50 pt-3 px-0.5">
                 <div className="flex items-center justify-between">
                     <div className="flex flex-wrap items-center gap-1.5 shrink-0">
+                        {student.currentStatus === 'absent' && student.currentNotes && (
+                            <div className="flex items-center gap-1.5 bg-rose-50/50 px-2 py-1 rounded-xl border border-rose-100/30">
+                                <span className="text-[9px] text-rose-700 font-bold">{student.currentNotes}</span>
+                            </div>
+                        )}
                         <div className="flex items-center gap-1.5 bg-red-50/50 px-2 py-1 rounded-xl border border-red-100/30">
                             <span className="text-[9px] text-red-700 font-bold">إجمالي الأسبوع:</span>
                             <span className="text-red-600 font-black text-sm font-sans">{student.totalAbsences}</span>
@@ -60,12 +65,16 @@ export default function StudentReportCard({ student, index, userRole, onArchive,
                             e.stopPropagation();
                             const phone = student.parentPhone || student.studentPhone || '';
                             const password = phone.length >= 6 ? phone.slice(-6) : phone;
+                            const absenceReason = student.isAutoAbsence && student.currentNotes
+                                ? `سبب الغياب: ${student.currentNotes}`
+                                : '';
                             const message = `السلام عليكم ورحمة الله،
 ولي أمر الطالب/ة: *${student.fullName}*
 
 نود تنبيهكم لغياب الطالب المتكرر:
 - إجمالي الغياب هذا الأسبوع: ${student.totalAbsences} يوم
 - الغياب المتصل: ${student.continuousAbsences} يوم
+${absenceReason ? `- ${absenceReason}` : ''}
 
 نرجو متابعة تقرير الطالب ومستواه عبر بوابة ولي الأمر:
 🔗 https://shatpycenter-um2b.vercel.app/attendance-report

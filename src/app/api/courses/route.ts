@@ -21,6 +21,7 @@ export async function GET() {
             link: row.link,
             bookLink: row.book_link,
             categoryId: row.category_id,
+            imageUrl: row.image_url,
             createdAt: row.created_at,
         }));
 
@@ -43,6 +44,7 @@ export async function POST(request: NextRequest) {
                 link: body.link,
                 book_link: body.bookLink || null,
                 category_id: body.categoryId || null,
+                image_url: body.imageUrl || null,
             }])
             .select()
             .single();
@@ -72,6 +74,7 @@ export async function PUT(request: NextRequest) {
         if (updates.link !== undefined) dbUpdates.link = updates.link;
         if (updates.bookLink !== undefined) dbUpdates.book_link = updates.bookLink;
         if (updates.categoryId !== undefined) dbUpdates.category_id = updates.categoryId;
+        if (updates.imageUrl !== undefined) dbUpdates.image_url = updates.imageUrl;
 
         const { data, error } = await supabase
             .from('courses')

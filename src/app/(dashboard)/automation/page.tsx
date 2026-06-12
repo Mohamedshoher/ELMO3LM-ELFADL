@@ -4,11 +4,11 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useAutomationExecution } from '@/features/automation/hooks/useAutomationExecution';
 import { useAutomation } from '@/features/automation/hooks/useAutomation';
-import { Calendar, Trash2, BookOpen, Home } from 'lucide-react';
+import { Calendar, Trash2, BookOpen, Home, UserX } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function AutomationPage() {
-    const { isExecuting, isExecutingExams, executeMissingReportDeduction, executeMissingExamDeduction } = useAutomationExecution();
+    const { isExecuting, isExecutingExams, isCheckingAttendance, executeMissingReportDeduction, executeMissingExamDeduction, executeStudentAttendanceCheck } = useAutomationExecution();
     const { logs, loading: logsLoading, loadLogs, undoLogAction } = useAutomation();
 
     const [selectedDate, setSelectedDate] = useState<string>(''); // Empty means Latest
@@ -41,6 +41,25 @@ export default function AutomationPage() {
         }
     };
 
+    const handleRunAttendanceCheck = async () => {
+        if (confirm("هل أنت متأكد من رغبتك في تشغيل فحص غياب الطلاب (لم يسلموا المتابعة)؟")) {
+            const result = await executeStudentAttendanceCheck();
+            setSelectedDate('');
+            loadLogs('');
+
+            if (result) {
+                const marked = (result.results || []).filter((r: any) => r.status === 'marked_absent').length;
+                if (marked > 0) {
+                    alert(`✅ تم تسجيل ${marked} طالب كغائب (لم يسلموا المتابعة).`);
+                } else {
+                    alert("✨ جميع الطلاب سلموا متابعاتهم اليوم.");
+                }
+            } else {
+                alert("❌ حدث خطأ أثناء الفحص.");
+            }
+        }
+    };
+
     const handleRunExamCheck = async () => {
         if (confirm("هل أنت متأكد من رغبتك في تشغيل فحص الاختبارات اليومية وتطبيق الخصومات على من لم يسجّل اختباراً؟")) {
             const result = await executeMissingExamDeduction();
@@ -59,6 +78,7 @@ export default function AutomationPage() {
 
     const reportLogs = logs.filter(log => log.ruleName.includes('تقرير') || log.ruleName.includes('تقارير'));
     const examLogs = logs.filter(log => log.ruleName.includes('اختبار'));
+    const attendanceLogs = logs.filter(log => log.ruleName.includes('غياب'));
 
     const renderLogList = (items: typeof logs, title: string, Icon: any, colorClass: string, bgClass: string, borderClass: string) => (
         <div className={`rounded-3xl p-6 shadow-sm border ${borderClass} h-full flex flex-col ${bgClass}`}>
@@ -198,16 +218,27 @@ export default function AutomationPage() {
                         <BookOpen className="w-5 h-5 mb-1 md:mb-0" />
                         <span>{isExecutingExams ? 'جاري فحص الاختبارات...' : 'فحص الاختبارات'}</span>
                     </button>
+                    <button
+                        onClick={handleRunAttendanceCheck}
+                        disabled={isCheckingAttendance}
+                        className="flex-1 flex flex-col md:flex-row items-center justify-center gap-2 px-4 py-4 md:py-3 bg-rose-50 text-rose-700 rounded-2xl font-black text-sm md:text-base hover:bg-rose-100 transition-all disabled:opacity-50"
+                    >
+                        <UserX className="w-5 h-5 mb-1 md:mb-0" />
+                        <span>{isCheckingAttendance ? 'جاري فحص الغياب...' : 'فحص غياب الطلاب'}</span>
+                    </button>
                 </div>
             </div>
 
             {/* Split Logs Layout */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
                 <div className="h-full">
                     {renderLogList(reportLogs, selectedDate ? `سجل التقارير (${new Date(selectedDate).toLocaleDateString('ar-EG', {month: 'short', day: 'numeric'})})` : "سجل التقارير الأخير", Calendar, "text-indigo-600", "bg-indigo-50/40", "border-indigo-100/60")}
                 </div>
                 <div className="h-full">
                     {renderLogList(examLogs, selectedDate ? `سجل الاختبارات (${new Date(selectedDate).toLocaleDateString('ar-EG', {month: 'short', day: 'numeric'})})` : "سجل الاختبارات الأخير", BookOpen, "text-emerald-600", "bg-emerald-50/40", "border-emerald-100/60")}
+                </div>
+                <div className="h-full">
+                    {renderLogList(attendanceLogs, selectedDate ? `سجل الغياب (${new Date(selectedDate).toLocaleDateString('ar-EG', {month: 'short', day: 'numeric'})})` : "سجل الغياب الأخير", UserX, "text-rose-600", "bg-rose-50/40", "border-rose-100/60")}
                 </div>
             </div>
         </div>

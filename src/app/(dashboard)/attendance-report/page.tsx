@@ -1,7 +1,7 @@
 "use client";
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Users } from 'lucide-react';
+import { Users, Bell } from 'lucide-react';
 
 // المكونات الفرعية
 import AttendanceStats from './AttendanceStats';
@@ -39,6 +39,45 @@ export default function AttendanceReportPage() {
     const [selectedStudent, setSelectedStudent] = useState<any>(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [studentToEdit, setStudentToEdit] = useState<any>(null);
+    const [autoCheckResult, setAutoCheckResult] = useState<string | null>(null);
+    const autoCheckDone = useRef(false);
+
+    // تشغيل تلقائي لفحص غياب الطلاب عند فتح التقرير (مرة واحدة فقط)
+    useEffect(() => {
+        if (autoCheckDone.current) return;
+        autoCheckDone.current = true;
+
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const dateStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
+
+        const todayStr = new Date().toISOString().split('T')[0];
+
+        // فحص الأمس واليوم
+        Promise.all([
+            fetch('/api/automation/check-student-attendance', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ date: dateStr }),
+            }),
+            fetch('/api/automation/check-student-attendance', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ date: todayStr }),
+            }),
+        ])
+        .then(async ([res1, res2]) => {
+            const data1 = await res1.json();
+            const data2 = await res2.json();
+            const total1 = (data1?.results || []).filter((r: any) => r.status === 'marked_absent').length;
+            const total2 = (data2?.results || []).filter((r: any) => r.status === 'marked_absent').length;
+            const total = total1 + total2;
+            if (total > 0) {
+                setAutoCheckResult(`✅ تم تسجيل ${total} طالب كغائب (لم يسلموا متابعاتهم)`);
+            }
+        })
+        .catch(err => console.error('Auto attendance check error:', err));
+    }, []);
 
     // 0. تحديد الطلاب المسموح للمستخدم رؤيتهم
     const relevantStudentIds = useMemo(() => {
@@ -82,7 +121,7 @@ export default function AttendanceReportPage() {
                 
                 while (true) {
                     let query = supabase.from('attendance')
-                        .select('student_id, date, status')
+                        .select('student_id, date, status, notes, is_automatic')
                         .gte('date', sinceDate);
 
                     // فلترة البيانات على السيرفر بدلاً من جلب الكل
@@ -110,7 +149,9 @@ export default function AttendanceReportPage() {
                 if (!map[row.student_id]) map[row.student_id] = [];
                 map[row.student_id].push({
                     date: row.date.split('T')[0],
-                    status: row.status
+                    status: row.status,
+                    notes: row.notes,
+                    is_automatic: row.is_automatic,
                 });
             });
 
@@ -146,10 +187,16 @@ export default function AttendanceReportPage() {
             .map(s => {
                 const history = reportData.attendanceMap[s.id] || [];
 
-                // استخراج الحالة الأحدث لكل يوم
+                // استخراج الحالة الأحدث لكل يوم مع التفاصيل
                 const dailyStatusMap = new Map<string, string>();
+                const dailyNotesMap = new Map<string, string | null>();
+                const dailyAutoMap = new Map<string, boolean>();
                 history.forEach(h => {
-                    if (!dailyStatusMap.has(h.date)) dailyStatusMap.set(h.date, h.status);
+                    if (!dailyStatusMap.has(h.date)) {
+                        dailyStatusMap.set(h.date, h.status);
+                        dailyNotesMap.set(h.date, h.notes);
+                        dailyAutoMap.set(h.date, h.is_automatic);
+                    }
                 });
 
                 // 1. حساب الغياب المتصل تنازلياً من اليوم المختار (في حدود الأسبوع فقط)
@@ -179,6 +226,10 @@ export default function AttendanceReportPage() {
                 const absencePercentage = totalRecordsWeek > 0 ? Math.round((totalAbsentWeek / totalRecordsWeek) * 100) : 0;
                 const presencePercentage = totalRecordsWeek > 0 ? Math.round((totalPresentWeek / totalRecordsWeek) * 100) : 0;
 
+                const selDateStatus = dailyStatusMap.get(selectedDateStr);
+                const selDateNotes = dailyNotesMap.get(selectedDateStr);
+                const selDateAuto = dailyAutoMap.get(selectedDateStr);
+
                 return {
                     ...s,
                     groupName: groups?.find(g => g.id === s.groupId)?.name || 'بدون حلقة',
@@ -186,7 +237,9 @@ export default function AttendanceReportPage() {
                     continuousAbsences,
                     absencePercentage,
                     presencePercentage,
-                    currentStatus: dailyStatusMap.get(selectedDateStr) || 'not_recorded'
+                    currentStatus: selDateStatus || 'not_recorded',
+                    currentNotes: selDateNotes || null,
+                    isAutoAbsence: selDateAuto || false,
                 };
             });
     }, [students, reportData, groups, user, selectedDateStr]);
@@ -240,7 +293,7 @@ export default function AttendanceReportPage() {
     return (
         <div className="min-h-screen bg-gray-50/50 pb-24 text-right overflow-x-hidden">
             {/* Header - Simple Stats Only */}
-            <div className="sticky top-0 z-[70] bg-white/90 backdrop-blur-md border-b border-gray-100 px-4 py-2 overflow-x-hidden">
+            <div className="sticky top-0 z-[70] bg-white/90 backdrop-blur-md border-b border-gray-100 px-4 py-2 overflow-x-hidden relative">
                 <div className="max-w-5xl mx-auto flex items-center justify-between">
                     <div className="flex bg-gray-100 p-1 rounded-xl items-center gap-2">
                         <button onClick={() => {
@@ -273,6 +326,12 @@ export default function AttendanceReportPage() {
                         </button>
                     </div>
 
+                    {autoCheckResult && (
+                        <div className="absolute top-full left-0 right-0 mt-2 mx-4 bg-green-50 border border-green-200 text-green-700 text-xs font-bold px-4 py-2 rounded-xl shadow-sm flex items-center gap-2 z-50">
+                            <Bell size={14} />
+                            {autoCheckResult}
+                        </div>
+                    )}
                     <AttendanceStats
                         presentCount={dailyStats.p} absentCount={dailyStats.a}
                         showPresentChart={showPresentChart} setShowPresentChart={setShowPresentChart}

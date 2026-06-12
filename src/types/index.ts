@@ -118,6 +118,7 @@ export interface Course {
   link: string;
   bookLink?: string;
   categoryId?: string;
+  imageUrl?: string;
   createdAt: string;
 }
 
