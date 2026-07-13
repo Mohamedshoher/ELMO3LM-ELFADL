@@ -63,13 +63,14 @@ export default function PendingStudentsPage() {
         const password = phone.length >= 6 ? phone.slice(-6) : phone;
         const group = groups.find(g => g.id === student.groupId);
         const courseName = group?.courseName || '';
+        const teacherName = (group?.teacherId ? teacherMap[group.teacherId] : null) || group?.teacher || 'المعلم المشرف';
         const message = `السلام عليكم ورحمة الله وبركاته 🌸
 
 🎉🎊 *أهلاً وسهلاً بك يا ${student.fullName}* 🎊🎉
 
 يسعدنا انضمامك إلى أسرة *المعلم الفاضل* 📖💚
 لدراسة علوم المعقول والمنقول
-*المعلم المشرف*
+المشرف على المجموعة: *${teacherName}*
 
 📚 *الدورة المسجل فيها:*
 ✨ *${courseName || 'سيتم تحديد الدورة قريباً'}* ✨
