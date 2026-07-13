@@ -74,7 +74,7 @@ export default function ParentDashboard() {
 
     const allowedContacts = teachers?.filter(t => {
         if (t.role === 'supervisor') return true;
-        const kidTeacherIds = myKids.map(k => k.groupId).map(gid => groups?.find(g => g.id === gid)?.teacherId);
+        const kidTeacherIds = myKids.map(k => k.groupIds?.[0] ?? k.groupId).map(gid => groups?.find(g => g.id === gid)?.teacherId);
         if (kidTeacherIds.includes(t.id)) return true;
         return false;
     }) || [];
@@ -187,8 +187,8 @@ export default function ParentDashboard() {
                     isOpen={showDetail}
                     onClose={() => setShowDetail(false)}
                     student={selectedKid}
-                    group={groups?.find(g => g.id === selectedKid.groupId)}
-                    teacher={teachers?.find(t => t.id === groups?.find(g => g.id === selectedKid.groupId)?.teacherId)}
+                    group={groups?.find(g => g.id === (selectedKid.groupId ?? selectedKid.groupIds?.[0] ?? null))}
+                    teacher={teachers?.find(t => t.id === groups?.find(g => g.id === (selectedKid.groupId ?? selectedKid.groupIds?.[0] ?? null))?.teacherId)}
                 />
             )}
 
@@ -280,7 +280,7 @@ function StudentCard({ kid, groups, courses: allCourses, teachers, onSelect, onL
     kid: any, groups: any[], courses: any[], teachers: any[], onSelect: () => void, onLeaveRequest: () => void
 }) {
     const { attendance, exams, fees, listens } = useStudentRecords(kid.id);
-    const group = groups.find(g => g.id === kid.groupId);
+    const group = groups.find(g => g.id === (kid.groupId ?? kid.groupIds?.[0] ?? null));
     const teacher = teachers.find(t => t.id === group?.teacherId);
     const course = allCourses.find((c: any) => c.id === group?.courseId);
 

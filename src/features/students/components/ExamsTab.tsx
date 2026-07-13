@@ -15,7 +15,8 @@ export default function ExamsTab({ student, records }: any) {
     const { data: groups } = useGroups();
     const { exams, addExam, deleteExam } = records;
 
-    const studentGroup = groups?.find((g: any) => g.id === student.groupId);
+    const primaryGroupId = student.groupId ?? student.groupIds?.[0] ?? null;
+    const studentGroup = groups?.find((g: any) => g.id === primaryGroupId);
     const studentCourseId = studentGroup?.courseId;
     const studentCourse = courses?.find((c: any) => c.id === studentCourseId);
 

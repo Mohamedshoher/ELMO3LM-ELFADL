@@ -121,7 +121,7 @@ export default function GroupsPage() {
 
         return groups.map(group => {
             const teacher = teachers?.find(t => t.id === group.teacherId);
-            const groupStudents = students?.filter(s => s.groupId === group.id && s.status === 'active') || [];
+            const groupStudents = students?.filter(s => s.status === 'active' && (s.groupIds?.includes(group.id) || s.groupId === group.id)) || [];
             const studentCount = groupStudents.length;
 
             // حساب نسبة الحضور

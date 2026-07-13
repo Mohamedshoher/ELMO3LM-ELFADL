@@ -54,7 +54,7 @@ export default function SchedulesDashboard() {
             const studentsWithoutSchedule: any[] = [];
 
             allStudents.forEach(s => {
-                if (s.groupId === group.id && s.status === 'active') {
+                if ((s.groupIds?.includes(group.id) || s.groupId === group.id) && s.status === 'active') {
                     if (s.appointment) {
                         s.appointment.split(',').forEach((p: string) => {
                             const parts = p.split(':');

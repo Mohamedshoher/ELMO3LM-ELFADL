@@ -147,9 +147,24 @@ export async function PUT(request: NextRequest) {
             const studentUpdates: any = {
                 course_registered_at: new Date().toISOString(),
             };
+
             if (groupId) {
-                studentUpdates.group_id = groupId;
+                // إضافة الطالب إلى المجموعة في جدول student_groups
+                const { data: existing } = await supabase
+                    .from('student_groups')
+                    .select('id')
+                    .eq('student_id', note.student_id)
+                    .eq('group_id', groupId)
+                    .maybeSingle();
+
+                if (!existing) {
+                    await supabase.from('student_groups').insert({
+                        student_id: note.student_id,
+                        group_id: groupId,
+                    });
+                }
             }
+
             const { error: studentError } = await supabase
                 .from('students')
                 .update(studentUpdates)

@@ -40,7 +40,7 @@ export const TeacherGroupsTab = ({ teacher, groups, students, teachers, isDirect
                             <div className="text-right">
                                 <h4 className="font-bold text-gray-800">{group.name}</h4>
                                 <p className="text-[10px] text-gray-400 font-bold mt-1">
-                                    عدد الطلاب: {students?.filter(s => s.groupId === group.id && s.status === 'active').length || 0} طالباً
+                                    عدد الطلاب: {students?.filter(s => s.status === 'active' && (s.groupIds?.includes(group.id) || s.groupId === group.id)).length || 0} طالباً
                                 </p>
                             </div>
                             {isDirector && (

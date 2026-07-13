@@ -22,7 +22,8 @@ export default function CoursesTab({ student, records }: any) {
         return student;
     }, [student, queryClient]);
 
-    const studentGroup = groups?.find((g: any) => g.id === freshStudent.groupId);
+    const primaryGroupId = freshStudent.groupId ?? freshStudent.groupIds?.[0] ?? null;
+    const studentGroup = groups?.find((g: any) => g.id === primaryGroupId);
     const course = courses?.find((c: any) => c.id === studentGroup?.courseId);
 
     const partialExams = (exams || []).filter((e: any) => e.courseId === course?.id && e.type !== 'إكمال دورة');

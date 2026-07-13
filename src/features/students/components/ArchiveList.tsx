@@ -252,7 +252,8 @@ export default function ArchiveList() {
             } else if (filter === 'full_indebted') {
                 matchesFilter = debtInfo.amount >= 1;
             } else if (filter !== 'الكل') {
-                matchesFilter = student.groupId === filter;
+                const aGroupIds = student.groupIds?.length ? student.groupIds : (student.groupId ? [student.groupId] : []);
+                matchesFilter = aGroupIds.includes(filter);
             }
 
             if (matchesFilter && daysInArchiveFilter > 0) {
@@ -528,7 +529,7 @@ export default function ArchiveList() {
                                                     {student.fullName}
                                                 </h3>
                                             <span className="text-[10px] text-gray-400 font-bold bg-gray-50 px-2 py-0.5 rounded-lg border border-gray-100 shrink-0">
-                                                {groups?.find(g => g.id === student.groupId)?.name || 'غير محدد'}
+                                                {groups?.find(g => g.id === (student.groupId ?? student.groupIds?.[0] ?? null))?.name || 'غير محدد'}
                                             </span>
                                         </div>
                                     </div>
@@ -588,7 +589,7 @@ export default function ArchiveList() {
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 setRestoreTarget(student);
-                                                setTargetGroupId(student.groupId || '');
+                                                setTargetGroupId(student.groupId ?? student.groupIds?.[0] ?? '');
                                             }}
                                             className="w-9 h-9 flex items-center justify-center bg-white text-green-600 rounded-lg hover:bg-green-600 hover:text-white transition-all active:scale-95 shadow-sm border border-gray-100"
                                             title="استعادة"

@@ -59,7 +59,7 @@ export default function ExamsReportPage() {
     const assignedGroupIds = filteredGroupsList.map((g: any) => g.id);
     const relevantStudentIds = useMemo(() => {
         if (!students || user?.role === 'director') return undefined;
-        return students.filter(s => s.groupId && assignedGroupIds.includes(s.groupId)).map(s => s.id);
+        return students.filter(s => (s.groupIds?.some((gid: string) => assignedGroupIds.includes(gid)) || (s.groupId && assignedGroupIds.includes(s.groupId)))).map(s => s.id);
     }, [students, assignedGroupIds, user?.role]);
 
     // --- 3. حالات الصفحة (State Management) ---
@@ -107,7 +107,7 @@ export default function ExamsReportPage() {
     // --- دالة مساعدة لحساب تقدم الطالب في الدورة ---
     const getStudentCourseProgress = useMemo(() => {
         return (student: any) => {
-            const group = groups?.find((g: any) => g.id === student.groupId);
+            const group = groups?.find((g: any) => g.id === (student.groupId ?? student.groupIds?.[0] ?? null));
             const course = courses?.find((c: any) => c.id === group?.courseId);
             if (!course) return { course: null, totalCompleted: 0, totalRequired: 0, remaining: 0, progress: 0 };
 
@@ -129,16 +129,16 @@ export default function ExamsReportPage() {
         let base = (students || []).filter((s: any) => s.status === 'active');
 
         if (selectedGroupId !== 'all') {
-            base = base.filter((s: any) => s.groupId === selectedGroupId);
+            base = base.filter((s: any) => s.groupIds?.includes(selectedGroupId) || s.groupId === selectedGroupId);
         } else if (user?.role === 'teacher' || user?.role === 'supervisor') {
-            base = base.filter((s: any) => s.groupId && assignedGroupIds.includes(s.groupId));
+            base = base.filter((s: any) => s.groupIds?.some((gid: string) => assignedGroupIds.includes(gid)) || (s.groupId && assignedGroupIds.includes(s.groupId)));
         }
 
         return base
             .map((s: any) => {
                 const progress = getStudentCourseProgress(s);
                 if (!progress.course) return null;
-                const groupName = groups?.find((g: any) => g.id === s.groupId)?.name || 'غير محدد';
+                const groupName = groups?.find((g: any) => g.id === (s.groupId ?? s.groupIds?.[0] ?? null))?.name || 'غير محدد';
                 return {
                     ...s,
                     groupName,
@@ -155,14 +155,14 @@ export default function ExamsReportPage() {
         let base = (students || []).filter((s: any) => s.status === 'active');
 
         if (selectedGroupId !== 'all') {
-            base = base.filter((s: any) => s.groupId === selectedGroupId);
+            base = base.filter((s: any) => s.groupIds?.includes(selectedGroupId) || s.groupId === selectedGroupId);
         } else if (user?.role === 'teacher' || user?.role === 'supervisor') {
-            base = base.filter((s: any) => s.groupId && assignedGroupIds.includes(s.groupId));
+            base = base.filter((s: any) => s.groupIds?.some((gid: string) => assignedGroupIds.includes(gid)) || (s.groupId && assignedGroupIds.includes(s.groupId)));
         }
 
         return base
             .map((s: any) => {
-                const group = groups?.find((g: any) => g.id === s.groupId);
+                const group = groups?.find((g: any) => g.id === (s.groupId ?? s.groupIds?.[0] ?? null));
                 const course = courses?.find((c: any) => c.id === group?.courseId);
                 if (!course) return null;
                 const groupName = group?.name || 'غير محدد';
@@ -198,11 +198,11 @@ export default function ExamsReportPage() {
         }
 
         return baseGroups.map((g: any) => {
-            const groupStudents = (students || []).filter((s: any) => s.groupId === g.id && s.status === 'active');
+            const groupStudents = (students || []).filter((s: any) => (s.groupIds?.includes(g.id) || s.groupId === g.id) && s.status === 'active');
             let totalRequired = 0;
             let totalTested = 0;
             const studentDetails = groupStudents.map((s: any) => {
-                const group = groups?.find((gr: any) => gr.id === s.groupId);
+                const group = groups?.find((gr: any) => gr.id === (s.groupId ?? s.groupIds?.[0] ?? null));
                 const course = courses?.find((c: any) => c.id === group?.courseId);
                 if (!course) return null;
 
@@ -211,7 +211,7 @@ export default function ExamsReportPage() {
                 const required = course.lecturesCount || 0;
                 const remaining = Math.max(0, required - testedLectures);
                 const pct = required > 0 ? Math.min(Math.round((testedLectures / required) * 100), 100) : 0;
-                const groupName = groups?.find((gr: any) => gr.id === s.groupId)?.name || 'غير محدد';
+                const groupName = groups?.find((gr: any) => gr.id === (s.groupId ?? s.groupIds?.[0] ?? null))?.name || 'غير محدد';
 
                 totalRequired += required;
                 totalTested += testedLectures;
@@ -238,14 +238,14 @@ export default function ExamsReportPage() {
         let baseStudents = (students || []).filter((s: any) => s.status === 'active');
 
         if (selectedGroupId !== 'all') {
-            baseStudents = baseStudents.filter((s: any) => s.groupId === selectedGroupId);
+            baseStudents = baseStudents.filter((s: any) => s.groupIds?.includes(selectedGroupId) || s.groupId === selectedGroupId);
         } else if (user?.role === 'teacher' || user?.role === 'supervisor') {
-            baseStudents = baseStudents.filter((s: any) => s.groupId && assignedGroupIds.includes(s.groupId));
+            baseStudents = baseStudents.filter((s: any) => s.groupIds?.some((gid: string) => assignedGroupIds.includes(gid)) || (s.groupId && assignedGroupIds.includes(s.groupId)));
         }
 
         return baseStudents
             .map((s: any) => {
-                const group = groups?.find((g: any) => g.id === s.groupId);
+                const group = groups?.find((g: any) => g.id === (s.groupId ?? s.groupIds?.[0] ?? null));
                 const course = courses?.find((c: any) => c.id === group?.courseId);
                 if (!course) return null;
 

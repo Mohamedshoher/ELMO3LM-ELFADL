@@ -45,7 +45,10 @@ export default function CourseDetailModal({ course, isOpen, onClose }: Props) {
     const teachers = [...new Set(students.map((s: any) => s.teacherName).filter(Boolean))] as string[];
 
     const filteredStudents = students.filter((s: any) => {
-        if (isTeacher && !teacherGroupIds.includes(s.groupId)) return false;
+        if (isTeacher) {
+            const sGroupIds = s.groupIds?.length ? s.groupIds : (s.groupId ? [s.groupId] : []);
+            if (!sGroupIds.some((gid: string) => teacherGroupIds.includes(gid))) return false;
+        }
         if (statusFilter === 'completed' && !s.courseCompletedAt) return false;
         if (statusFilter === 'in-progress' && s.courseCompletedAt) return false;
         if (teacherFilter !== 'all' && s.teacherName !== teacherFilter) return false;

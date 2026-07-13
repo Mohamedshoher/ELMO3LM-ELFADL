@@ -22,6 +22,7 @@ export default function EditStudentModal({ student, isOpen, onClose }: EditStude
     const queryClient = useQueryClient(); // الوصول إلى عميل الاستعلامات لتحديث البيانات بعد التعديل
 
     // حالة بيانات النموذج (Form State)
+    const [isFree, setIsFree] = useState(false);
     const [formData, setFormData] = useState({
         fullName: '',
         parentPhone: '',
@@ -29,6 +30,7 @@ export default function EditStudentModal({ student, isOpen, onClose }: EditStude
         enrollmentDate: '',
         status: 'active' as Student['status'],
         groupId: '',
+        groupIds: [] as string[],
         monthlyAmount: 0,
         appointment: '',
     });
@@ -41,14 +43,18 @@ export default function EditStudentModal({ student, isOpen, onClose }: EditStude
     // مراقبة التغيير في الطالب المختار لتعبئة النموذج ببياناته تلقائياً عند الفتح
     useEffect(() => {
         if (student) {
+            const amount = student.monthlyAmount ?? 0;
+            setIsFree(amount === 0);
+            const studentGroupIds = student.groupIds?.length ? student.groupIds : (student.groupId ? [student.groupId] : []);
             setFormData({
                 fullName: student.fullName || '',
                 parentPhone: student.parentPhone || '',
                 isOrphan: student.isOrphan || false,
                 enrollmentDate: student.enrollmentDate || '',
                 status: student.status || 'active',
-                groupId: student.groupId || '',
-                monthlyAmount: student.monthlyAmount ?? 0,
+                groupId: student.groupId || (studentGroupIds[0] ?? ''),
+                groupIds: studentGroupIds,
+                monthlyAmount: amount,
                 appointment: student.appointment || '',
             });
         }
@@ -117,29 +123,81 @@ export default function EditStudentModal({ student, isOpen, onClose }: EditStude
                         required
                         dir="rtl"
                     />
-                    <Input
-                        label="المبلغ الشهري"
-                        type="number"
-                        placeholder="0.00"
-                        value={formData.monthlyAmount || ''}
-                        onChange={(e) => setFormData({ ...formData, monthlyAmount: Number(e.target.value) })}
-                        required
-                        dir="ltr"
-                    />
                     <div className="flex flex-col gap-2">
-                        <label className="text-sm font-medium text-gray-700 mr-1">المجموعة</label>
-                        <select
-                            value={formData.groupId || ''}
-                            onChange={(e) => setFormData({ ...formData, groupId: e.target.value })}
-                            className="w-full h-12 bg-white border border-gray-100 rounded-xl px-4 text-right font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/10 shadow-sm appearance-none"
-                            style={{ backgroundImage: 'url("data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%239ca3af%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'left 1rem center', backgroundSize: '1em' }}
-                            required
-                        >
-                            <option value="">اختر المجموعة</option>
-                            {[...(groups || [])].sort((a, b) => a.name.localeCompare(b.name, 'ar')).map((group: Group) => (
-                                <option key={group.id} value={group.id}>{group.name}</option>
-                            ))}
-                        </select>
+                        <div className="flex items-center justify-between">
+                            <label className="text-sm font-medium text-gray-700 mr-1">المبلغ الشهري</label>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    const next = !isFree;
+                                    setIsFree(next);
+                                    if (next) setFormData({ ...formData, monthlyAmount: 0 });
+                                }}
+                                className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold transition-all duration-200 border ${
+                                    isFree
+                                        ? 'bg-green-500 text-white border-green-500 shadow-md shadow-green-200'
+                                        : 'bg-white text-green-600 border-green-400 hover:bg-green-50'
+                                }`}
+                            >
+                                <span>{isFree ? '✓' : '🎁'}</span>
+                                <span>مجانًا</span>
+                            </button>
+                        </div>
+                        <input
+                            type="number"
+                            placeholder="0.00"
+                            value={isFree ? '0' : (formData.monthlyAmount || '')}
+                            onChange={(e) => !isFree && setFormData({ ...formData, monthlyAmount: Number(e.target.value) })}
+                            disabled={isFree}
+                            required={!isFree}
+                            dir="ltr"
+                            className={`w-full h-12 border rounded-xl px-4 text-left font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/10 shadow-sm transition-all duration-200 ${
+                                isFree
+                                    ? 'bg-green-50 border-green-200 text-green-700 cursor-not-allowed'
+                                    : 'bg-white border-gray-100 text-gray-700'
+                            }`}
+                        />
+                        {isFree && (
+                            <p className="text-xs text-green-600 font-medium flex items-center gap-1">
+                                <span>✓</span> هذا الطالب مسجل بدون رسوم
+                            </p>
+                        )}
+                    </div>
+                    <div className="flex flex-col gap-2">
+                        <label className="text-sm font-medium text-gray-700 mr-1">المجموعات</label>
+                        <div className="max-h-48 overflow-y-auto border border-gray-100 rounded-xl p-2 space-y-1">
+                            {(!groups || groups.length === 0) && (
+                                <p className="text-sm text-gray-400 text-center py-2">لا توجد مجموعات متاحة</p>
+                            )}
+                            {[...(groups || [])].sort((a, b) => a.name.localeCompare(b.name, 'ar')).map((group: Group) => {
+                                const isSelected = formData.groupIds.includes(group.id);
+                                return (
+                                    <label
+                                        key={group.id}
+                                        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-colors ${
+                                            isSelected ? 'bg-blue-50 border border-blue-200' : 'hover:bg-gray-50 border border-transparent'
+                                        }`}
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={isSelected}
+                                            onChange={(e) => {
+                                                const newGroupIds = e.target.checked
+                                                    ? [...formData.groupIds, group.id]
+                                                    : formData.groupIds.filter(id => id !== group.id);
+                                                setFormData({
+                                                    ...formData,
+                                                    groupIds: newGroupIds,
+                                                    groupId: newGroupIds.length > 0 ? newGroupIds[0] : '',
+                                                });
+                                            }}
+                                            className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                        />
+                                        <span className="text-sm font-medium text-gray-700">{group.name}</span>
+                                    </label>
+                                );
+                            })}
+                        </div>
                     </div>
                     <Input
                         label="موعد الحضور"

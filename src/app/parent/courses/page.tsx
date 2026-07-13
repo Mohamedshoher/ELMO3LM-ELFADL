@@ -68,7 +68,7 @@ export default function ParentCoursesPage() {
     });
 
     const getKidCourse = (kid: any) => {
-        const group = groups?.find((g: any) => g.id === kid.groupId);
+        const group = groups?.find((g: any) => g.id === (kid.groupId ?? kid.groupIds?.[0] ?? null));
         return courses?.find((c: any) => c.id === group?.courseId);
     };
 

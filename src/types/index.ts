@@ -26,6 +26,7 @@ export interface Student {
   status: 'active' | 'archived' | 'suspended' | 'pending';
   isArchived?: boolean; // Helper prop
   groupId: string | null;
+  groupIds: string[];
   monthlyAmount?: number;
   appointment?: string; // موعد الحضور المتفق عليه
   notes?: string;

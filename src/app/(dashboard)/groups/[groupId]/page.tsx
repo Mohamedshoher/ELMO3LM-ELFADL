@@ -35,7 +35,7 @@ export default function GroupDetailPage() {
         if (!foundGroup) return null;
 
         const teacher = teachers?.find(t => t.id === foundGroup.teacherId);
-        const studentCount = students?.filter(s => s.groupId === foundGroup.id && s.status === 'active').length || 0;
+        const studentCount = students?.filter(s => s.status === 'active' && (s.groupIds?.includes(foundGroup.id) || s.groupId === foundGroup.id)).length || 0;
 
         let color = 'bg-gray-100 text-gray-600';
         if (foundGroup.name.includes('قرآن')) color = 'bg-blue-100 text-blue-600';

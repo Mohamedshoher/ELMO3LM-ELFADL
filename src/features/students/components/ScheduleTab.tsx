@@ -21,7 +21,8 @@ export default function ScheduleTab({ student }: any) {
     const { data: allStudents } = useQuery({ queryKey: ['students'], queryFn: () => getStudents() });
     const { data: allGroups } = useQuery({ queryKey: ['groups'], queryFn: () => getGroups() });
 
-    const myGroup = allGroups?.find(g => g.id === student.groupId);
+    const primaryGroupId = student.groupId ?? student.groupIds?.[0] ?? null;
+    const myGroup = allGroups?.find(g => g.id === primaryGroupId);
     const maxPerHour = myGroup?.maxStudentsPerHour || 5;
 
     // وظيفة تحويل الوقت إلى تنسيق عربي (مثلاً: 4:30 عصراً)
@@ -46,7 +47,7 @@ export default function ScheduleTab({ student }: any) {
 
     // استخراج كافة المواعيد الفريدة المستخدمة في هذه المجموعة حالياً (لمنع التكرار في الخيارات)
     const suggestedTimes = useMemo(() => {
-        if (!allStudents || !student.groupId) return [];
+        if (!allStudents || !primaryGroupId) return [];
         const timesSet = new Set<string>();
         
         const normalizeToFullFormat = (t: string) => {
@@ -69,7 +70,8 @@ export default function ScheduleTab({ student }: any) {
         };
 
         allStudents.forEach(s => {
-            if (s.groupId === student.groupId && s.appointment) {
+            const sGroupId = s.groupId ?? s.groupIds?.[0] ?? null;
+            if (sGroupId === primaryGroupId && s.appointment) {
                 s.appointment.split(',').forEach((p: string) => {
                     const parts = p.split(':');
                     if (parts.length < 2) return;
@@ -92,7 +94,7 @@ export default function ScheduleTab({ student }: any) {
             };
             return getVal(a) - getVal(b);
         });
-    }, [allStudents, student.groupId]);
+    }, [allStudents, primaryGroupId]);
 
     // وظيفة تحويل الوقت من تنسيق 24 ساعة إلى التنسيق الموحد للمركز
     const formatToStandardArabic = (timeStr: string) => {
@@ -207,11 +209,12 @@ export default function ScheduleTab({ student }: any) {
     };
 
     const allGroupSlots = useMemo(() => {
-        if (!swapState || !allStudents || !student.groupId) return [];
+        if (!swapState || !allStudents || !primaryGroupId) return [];
         const slotsMap = new Map<string, { day: string, time: string, students: any[] }>();
         
         allStudents.forEach(s => {
-            if (s.id !== student.id && s.groupId === student.groupId && s.status === 'active' && s.appointment) {
+            const sGroupId = s.groupId ?? s.groupIds?.[0] ?? null;
+            if (s.id !== student.id && sGroupId === primaryGroupId && s.status === 'active' && s.appointment) {
                 s.appointment.split(',').forEach((p: string) => {
                     const parts = p.split(':');
                     if (parts.length >= 2) {
@@ -233,7 +236,7 @@ export default function ScheduleTab({ student }: any) {
         });
         
         return Array.from(slotsMap.values()).sort((a, b) => a.time.localeCompare(b.time));
-    }, [swapState, allStudents, student.id, student.groupId]);
+    }, [swapState, allStudents, student.id, primaryGroupId]);
 
     // وظيفة بدء تعديل موعد موجود
     const handleEditSchedule = (day: string, timeStr: string) => {
@@ -260,13 +263,13 @@ export default function ScheduleTab({ student }: any) {
         if (inputDays.length === 0) return alert('اختر يوماً واحداً على الأقل أو قم بتعديل المواعيد الحالية');
 
         // التحقق من السعة القصوى لكل يوم/وقت مختار
-        if (allStudents && student.groupId) {
+        if (allStudents && primaryGroupId) {
             for (const day of inputDays) {
                 const newTime = formatToStandardArabic(selectedSchedules[day]);
                 // عد الطلاب المجدولين لنفس اليوم/الوقت في نفس المجموعة (باستثناء الطالب الحالي)
                 const count = allStudents.filter(s =>
                     s.id !== student.id &&
-                    s.groupId === student.groupId &&
+                    (s.groupId ?? s.groupIds?.[0] ?? null) === primaryGroupId &&
                     s.status === 'active' &&
                     s.appointment?.split(',').some((p: string) => {
                         const parts = p.split(':');
@@ -349,7 +352,7 @@ export default function ScheduleTab({ student }: any) {
                                 const newTimeFormatted = formatToStandardArabic(selectedSchedules[day]);
                                 const usedCount = (allStudents || []).filter(s =>
                                     s.id !== student.id &&
-                                    s.groupId === student.groupId &&
+                                    (s.groupId ?? s.groupIds?.[0] ?? null) === primaryGroupId &&
                                     s.status === 'active' &&
                                     s.appointment?.split(',').some((p: string) => {
                                         const parts = p.split(':');

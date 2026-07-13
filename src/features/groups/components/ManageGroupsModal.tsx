@@ -53,8 +53,8 @@ export default function ManageGroupsModal({ isOpen, onClose }: ManageGroupsModal
 
         return filtered.map(group => {
             const teacher = teachers?.find(t => t.id === group.teacherId);
-            const activeCount = students?.filter(s => s.groupId === group.id && s.status === 'active').length || 0;
-            const totalCount = students?.filter(s => s.groupId === group.id).length || 0;
+            const activeCount = students?.filter(s => s.status === 'active' && (s.groupIds?.includes(group.id) || s.groupId === group.id)).length || 0;
+            const totalCount = students?.filter(s => s.groupIds?.includes(group.id) || s.groupId === group.id).length || 0;
 
             return {
                 ...group,

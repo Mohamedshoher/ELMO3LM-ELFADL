@@ -125,7 +125,7 @@ export default function ChatPage() {
 
     const myStudents = studentsList.filter(s =>
       ((user?.role === 'director') ||
-      (s.groupId && myGroups.some(g => g.id === s.groupId))) &&
+      ((s.groupIds?.some(gid => myGroups.some(g => g.id === gid)) || (s.groupId && myGroups.some(g => g.id === s.groupId))))) &&
       s.status === 'active' // الطلاب النشطين فقط
     );
 

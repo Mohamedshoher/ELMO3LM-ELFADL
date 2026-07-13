@@ -87,35 +87,23 @@ export const loginWithRole = async (identifier: string, password: string): Promi
             if (local.length === 11) formats.add(local);
         }
 
-        // البحث برقم الطالب أولاً، ثم برقم ولي الأمر
+        // البحث برقم الطالب فقط
         let { data: students, error } = await supabase
             .from('students')
-            .select('full_name, student_phone, parent_phone')
+            .select('full_name, student_phone')
             .in('student_phone', Array.from(formats))
             .limit(1);
-
-        if (!students || students.length === 0) {
-            const result = await supabase
-                .from('students')
-                .select('full_name, student_phone, parent_phone')
-                .in('parent_phone', Array.from(formats))
-                .limit(1);
-            students = result.data;
-            error = result.error;
-        }
 
         if (!students || students.length === 0) {
             // محاولة بحث أوسع: نجلب جميع الطلاب ونطابق بتجريد الأرقام
             const { data: allStudents } = await supabase
                 .from('students')
-                .select('full_name, student_phone, parent_phone')
+                .select('full_name, student_phone')
                 .limit(500);
 
             const matched = (allStudents || []).find(s => {
                 const studentDigits = (s.student_phone || '').replace(/[^0-9]/g, '');
-                const parentDigits = (s.parent_phone || '').replace(/[^0-9]/g, '');
-                return studentDigits === digits || studentDigits === digits.slice(-11) || studentDigits === '0' + digits.slice(-10) ||
-                    parentDigits === digits || parentDigits === digits.slice(-11) || parentDigits === '0' + digits.slice(-10);
+                return studentDigits === digits || studentDigits === digits.slice(-11) || studentDigits === '0' + digits.slice(-10);
             });
 
             if (!matched) {
@@ -131,15 +119,14 @@ export const loginWithRole = async (identifier: string, password: string): Promi
         }
 
         const dbStudent = students[0];
-        const dbPhone = dbStudent.student_phone || dbStudent.parent_phone || phone;
-        const last6Digits = dbPhone.slice(-6);
+        const last6Digits = digits.slice(-6);
 
         // السماح بالدخول بكلمة 123456 أو آخر 6 أرقام من الهاتف
         if (password !== last6Digits && password !== '123456') {
             throw new Error(`كلمة المرور غير صحيحة. يرجى استخدام آخر 6 أرقام من رقم هاتفك المسجل.`);
         }
 
-        displayName = dbStudent.full_name || dbPhone;
+        displayName = dbStudent.full_name || phone;
     }
 
     // --- 4. التحقق من دخول المعلم أو المشرف (عبر قاعدة البيانات) ---

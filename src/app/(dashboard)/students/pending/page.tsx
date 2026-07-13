@@ -61,7 +61,7 @@ export default function PendingStudentsPage() {
     const handleWelcomeWhatsApp = (student: Student) => {
         const phone = student.studentPhone || student.parentPhone || '';
         const password = phone.length >= 6 ? phone.slice(-6) : phone;
-        const group = groups.find(g => g.id === student.groupId);
+        const group = groups.find(g => g.id === (student.groupId ?? student.groupIds?.[0] ?? null));
         const courseName = group?.courseName || '';
         const teacherName = (group?.teacherId ? teacherMap[group.teacherId] : null) || group?.teacher || 'المعلم المشرف';
         const message = `السلام عليكم ورحمة الله وبركاته 🌸
@@ -261,7 +261,7 @@ export default function PendingStudentsPage() {
                     </div>
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                         {recentStudents.map((student) => {
-                            const group = groups.find(g => g.id === student.groupId);
+                            const group = groups.find(g => g.id === (student.groupId ?? student.groupIds?.[0] ?? null));
                             return (
                                 <div
                                     key={student.id}

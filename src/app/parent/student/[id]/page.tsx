@@ -44,7 +44,7 @@ export default function StudentDetailParentPage() {
     } = useStudentRecords(id as string);
 
     const student = students?.find(s => s.id === id);
-    const group = groups?.find(g => g.id === student?.groupId);
+    const group = groups?.find(g => g.id === (student?.groupId ?? student?.groupIds?.[0] ?? null));
     const teacher = teachers?.find(t => t.id === group?.teacherId);
 
     if (studentsLoading || isLoadingAttendance || isLoadingExams || isLoadingFees || isLoadingPlans) {

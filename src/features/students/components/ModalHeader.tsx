@@ -27,7 +27,7 @@ export default function ModalHeader({ student, onClose, onEdit }: any) {
     // وظيفة تبديل حالة الأرشفة
     const handleArchiveToggle = () => {
         if (isArchived) {
-            if (confirm(`استعادة ${student.fullName}؟`)) restoreStudent(student.id, student.groupId || null);
+            if (confirm(`استعادة ${student.fullName}؟`)) restoreStudent(student.id, student.groupId ?? student.groupIds?.[0] ?? null);
         } else {
             if (confirm(`أرشفة ${student.fullName}؟`)) archiveStudent(student.id);
         }
@@ -68,7 +68,7 @@ export default function ModalHeader({ student, onClose, onEdit }: any) {
             <div className="flex items-center gap-2 mt-2 sm:mt-3">
                 <span className="text-blue-600 font-bold text-[10px] sm:text-sm bg-blue-50 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg flex items-center gap-1.5">
                     <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
-                    {groups.find((g: any) => g.id === student.groupId)?.name || 'بدون مجموعة'}
+                    {groups.find((g: any) => g.id === (student.groupId ?? student.groupIds?.[0] ?? null))?.name || 'بدون مجموعة'}
                 </span>
             </div>
         </div>

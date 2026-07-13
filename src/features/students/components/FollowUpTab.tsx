@@ -16,7 +16,8 @@ export default function FollowUpTab({ student, records }: any) {
     const canAdd = user?.role === 'parent';
     const canDelete = user?.role === 'director';
 
-    const studentGroup = groups?.find((g: any) => g.id === student.groupId);
+    const primaryGroupId = student.groupId ?? student.groupIds?.[0] ?? null;
+    const studentGroup = groups?.find((g: any) => g.id === primaryGroupId);
     const course = courses?.find((c: any) => c.id === studentGroup?.courseId);
 
     const courseListens = useMemo(() => {

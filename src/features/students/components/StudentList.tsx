@@ -85,7 +85,8 @@ export default function StudentList({ groupId, customTitle }: StudentListProps) 
         if (!students || !groups || !courses) return {};
         const map: Record<string, { courseName: string; progress: number; totalCompleted: number; totalRequired: number }> = {};
         students.forEach((s: any) => {
-            const group = groups.find((g: any) => g.id === s.groupId);
+            const primaryGroupId = s.groupId ?? s.groupIds?.[0] ?? null;
+            const group = groups.find((g: any) => g.id === primaryGroupId);
             const course = courses.find((c: any) => c.id === group?.courseId);
             if (course) {
                 const totalRequired = course.lecturesCount || 0;
@@ -141,7 +142,8 @@ export default function StudentList({ groupId, customTitle }: StudentListProps) 
         if (!students || !groups || !courses) return [];
         const courseIds = new Set<string>();
         students.forEach((s: any) => {
-            const group = groups.find((g: any) => g.id === s.groupId);
+            const primaryGroupId = s.groupId ?? s.groupIds?.[0] ?? null;
+            const group = groups.find((g: any) => g.id === primaryGroupId);
             if (group?.courseId) courseIds.add(group.courseId);
         });
         return courses.filter((c: any) => courseIds.has(c.id));
@@ -198,9 +200,10 @@ export default function StudentList({ groupId, customTitle }: StudentListProps) 
         const timesMap = new Map<string, string>(); // Map for normalized -> original
         students.forEach(student => {
              if (student.status !== 'active') return;
-             if (groupId && student.groupId !== groupId) return;
-             if (user?.role === 'teacher' && (!student.groupId || !myGroupsIds.includes(student.groupId))) return;
-             if (user?.role === 'supervisor' && (!student.groupId || !myGroupsIds.includes(student.groupId))) return;
+             const sGroupIds = (student as any).groupIds?.length ? (student as any).groupIds : (student.groupId ? [student.groupId] : []);
+             if (groupId && !sGroupIds.includes(groupId)) return;
+             if (user?.role === 'teacher' && !sGroupIds.some((gid: string) => myGroupsIds.includes(gid))) return;
+             if (user?.role === 'supervisor' && !sGroupIds.some((gid: string) => myGroupsIds.includes(gid))) return;
 
              if (student.appointment) {
                  student.appointment.split(',').forEach((p: string) => {
@@ -288,12 +291,14 @@ export default function StudentList({ groupId, customTitle }: StudentListProps) 
 
         const baseFiltered = students.filter(student => {
             if (user?.role === 'teacher' || user?.role === 'supervisor') {
-                if (!student.groupId || !myGroupsIds.includes(student.groupId)) return false;
+                const sGroupIds = student.groupIds?.length ? student.groupIds : (student.groupId ? [student.groupId] : []);
+                if (!sGroupIds.some(gid => myGroupsIds.includes(gid))) return false;
             }
 
             let matchesFilter = true;
             if (groupId) {
-                matchesFilter = student.groupId === groupId;
+                const sGroupIds = student.groupIds?.length ? student.groupIds : (student.groupId ? [student.groupId] : []);
+                matchesFilter = sGroupIds.includes(groupId);
             } else if (filter === 'الكل') {
                 matchesFilter = true;
             } else if (filter === 'الأيتام') {
@@ -304,7 +309,8 @@ export default function StudentList({ groupId, customTitle }: StudentListProps) 
             }
 
             if (courseFilter !== 'الكل') {
-                const group = groups?.find((g: any) => g.id === student.groupId);
+                const primaryGroupId = student.groupId ?? student.groupIds?.[0] ?? null;
+                const group = groups?.find((g: any) => g.id === primaryGroupId);
                 if (group?.courseId !== courseFilter) matchesFilter = false;
             }
 
@@ -700,7 +706,8 @@ export default function StudentList({ groupId, customTitle }: StudentListProps) 
 
                                     </div>
                                     {courseProgressMap[student.id] && (() => {
-                                        const group = groups?.find((g: any) => g.id === student.groupId);
+                                        const primaryGroupId = student.groupId ?? student.groupIds?.[0] ?? null;
+                                        const group = groups?.find((g: any) => g.id === primaryGroupId);
                                         const course = courses?.find((c: any) => c.id === group?.courseId);
                                         return (
                                             <div className="mt-0.5">

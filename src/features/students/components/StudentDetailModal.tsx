@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { X, Calendar, BookOpen, FileText, Award, Headphones } from 'lucide-react';
+import { X, Calendar, BookOpen, FileText, Award, Headphones, CreditCard } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import { useStudents } from '../hooks/useStudents';
 import { useStudentRecords } from '../hooks/useStudentRecords';
@@ -16,6 +16,7 @@ import ExamsTab from './ExamsTab';
 import CoursesTab from './CoursesTab';
 import NotesTab from './NotesTab';
 import FollowUpTab from './FollowUpTab';
+import FeesTab from './FeesTab';
 import { useGroups } from '@/features/groups/hooks/useGroups';
 import { FadeIn, SlideIn } from '@/components/ui/transition';
 
@@ -73,13 +74,16 @@ export default function StudentDetailModal({
 
 
 
+    // هل الطالب مجاني؟
+    const isFree = !student.monthlyAmount || student.monthlyAmount === 0;
+
     // تعريف التبويبات (الأزرار العلوية)
     const tabs = [
         { id: 'attendance', label: 'سجل الحضور', icon: Calendar },
         { id: 'courses', label: 'الدورات', icon: Award },
         { id: 'followup', label: 'المتابعات', icon: Headphones },
         { id: 'exams', label: 'سجل الاختبارات', icon: BookOpen },
-        // { id: 'fees', label: 'سجل المصروفات', icon: CreditCard },
+        ...(!isFree ? [{ id: 'fees', label: 'المصروفات', icon: CreditCard }] : []),
         { id: 'notes', label: 'سجل الملحوظات', icon: FileText },
     ];
 
@@ -121,6 +125,7 @@ export default function StudentDetailModal({
                     {activeTab === 'notes' && <NotesTab student={student} records={studentRecords} />}
                     {activeTab === 'courses' && <CoursesTab student={student} records={studentRecords} />}
                     {activeTab === 'followup' && <FollowUpTab student={student} records={studentRecords} />}
+                    {activeTab === 'fees' && !isFree && <FeesTab student={student} records={studentRecords} />}
                 </div>
             </SlideIn>
         </>

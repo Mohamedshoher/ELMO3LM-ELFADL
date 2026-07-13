@@ -102,7 +102,7 @@ export default function FinanceTeachersPage() {
         const collections = Object.entries(collectionsByTeacher).map(([id, data]) => {
             const teacher = teachers.find(t => t.id === id);
             const tGroups = groups.filter(g => g.teacherId === id).map(g => g.id);
-            const tStudents = students.filter(s => s.groupId && tGroups.includes(s.groupId) && s.status !== 'archived' && (!s.enrollmentDate || s.enrollmentDate.substring(0, 7) <= selectedMonth));
+            const tStudents = students.filter(s => (s.groupIds?.some((gid: string) => tGroups.includes(gid)) || (s.groupId && tGroups.includes(s.groupId))) && s.status !== 'archived' && (!s.enrollmentDate || s.enrollmentDate.substring(0, 7) <= selectedMonth));
             let deficit = 0, expected = 0;
             tStudents.forEach(s => {
                 const paid = allFees.filter((f: any) => f.studentId === s.id).reduce((sum: number, f: any) => sum + (Number(f.amount?.toString().replace(/[^0-9.]/g, '')) || 0), 0);
@@ -227,7 +227,7 @@ export default function FinanceTeachersPage() {
                         ) : (
                             exemptions.map((ex: any) => {
                                 const student = students.find(s => s.id === ex.student_id);
-                                const group = student ? groups.find(g => g.id === student.groupId) : null;
+                                const group = student ? groups.find(g => g.id === (student.groupId ?? student.groupIds?.[0] ?? null)) : null;
                                 return (
                                     <div key={ex.id} className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex items-center justify-between">
                                         <div className="text-right">

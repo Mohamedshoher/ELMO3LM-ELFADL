@@ -63,7 +63,7 @@ export default function FollowUpReportPage() {
 
     const relevantStudentIds = useMemo(() => {
         if (!students || user?.role === 'director') return undefined;
-        return students.filter(s => s.groupId && assignedGroupIds.includes(s.groupId)).map(s => s.id);
+        return students.filter(s => s.groupIds?.some((gid: string) => assignedGroupIds.includes(gid)) || (s.groupId && assignedGroupIds.includes(s.groupId))).map(s => s.id);
     }, [students, assignedGroupIds, user?.role]);
 
     const [view, setView] = useState<ViewType>('log');
@@ -106,7 +106,8 @@ export default function FollowUpReportPage() {
     };
 
     const getStudentGroupId = (studentId: string) => {
-        return students?.find((s: any) => s.id === studentId)?.groupId;
+        const found = students?.find((s: any) => s.id === studentId);
+        return found?.groupId ?? found?.groupIds?.[0] ?? null;
     };
 
     const getGroupName = (groupId?: string) => {
@@ -222,9 +223,9 @@ export default function FollowUpReportPage() {
         let baseStudents = (students || []).filter((s: any) => s.status === 'active');
 
         if (selectedGroupId !== 'all') {
-            baseStudents = baseStudents.filter((s: any) => s.groupId === selectedGroupId);
+            baseStudents = baseStudents.filter((s: any) => s.groupIds?.includes(selectedGroupId) || s.groupId === selectedGroupId);
         } else if (isTeacherOrSupervisorRestricted) {
-            baseStudents = baseStudents.filter((s: any) => s.groupId && assignedGroupIds.includes(s.groupId));
+            baseStudents = baseStudents.filter((s: any) => s.groupIds?.some((gid: string) => assignedGroupIds.includes(gid)) || (s.groupId && assignedGroupIds.includes(s.groupId)));
         }
 
         if (searchQuery.trim()) {
@@ -234,7 +235,8 @@ export default function FollowUpReportPage() {
 
         return baseStudents
             .map((s: any) => {
-                const group = groupMap[s.groupId];
+                const primaryGroupId = s.groupId ?? s.groupIds?.[0] ?? null;
+                const group = groupMap[primaryGroupId as string];
                 const courseId = group?.courseId;
                 const course = courseMap[courseId];
                 if (!course) return null;
@@ -252,7 +254,7 @@ export default function FollowUpReportPage() {
 
                 return {
                     ...s,
-                    groupName: getGroupName(s.groupId),
+                    groupName: getGroupName(s.groupId ?? s.groupIds?.[0] ?? undefined),
                     courseId,
                     courseName: course.name,
                     totalListened,
@@ -279,7 +281,7 @@ export default function FollowUpReportPage() {
             .map((g: any) => {
                 const course = courseMap[g.courseId];
                 const groupStudents = (students || []).filter(
-                    (s: any) => s.groupId === g.id && s.status === 'active'
+                    (s: any) => (s.groupIds?.includes(g.id) || s.groupId === g.id) && s.status === 'active'
                 );
 
                 let totalRequired = 0;
@@ -550,7 +552,7 @@ export default function FollowUpReportPage() {
                         ) : (
                             filteredListens.map((listen: any) => {
                                 const student = studentMap[listen.studentId];
-                                const group = groupMap[student?.groupId];
+                                const group = groupMap[student?.groupId ?? student?.groupIds?.[0]];
                                 const course = courseMap[listen.courseId || group?.courseId];
                                 return (
                                     <div key={listen.id}
@@ -567,7 +569,7 @@ export default function FollowUpReportPage() {
                                                         {getStudentName(listen.studentId)}
                                                     </h3>
                                                     <span className="text-[9px] text-gray-400 font-bold shrink-0">
-                                                        {getGroupName(student?.groupId)}
+                                                        {getGroupName(student?.groupId ?? student?.groupIds?.[0])}
                                                     </span>
                                                 </div>
                                                 <div className="flex items-center gap-2 mt-0.5">

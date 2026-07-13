@@ -26,7 +26,6 @@ export const addStudent = async (student: Omit<Student, 'id'>): Promise<string> 
             .from('students')
             .insert([{
                 full_name: student.fullName,
-                group_id: student.groupId,
                 parent_phone: student.parentPhone,
                 student_phone: student.parentPhone,
                 status: student.status || 'pending',
@@ -42,6 +41,19 @@ export const addStudent = async (student: Omit<Student, 'id'>): Promise<string> 
             .single();
 
         if (error) throw error;
+
+        // إضافة المجموعات في جدول student_groups
+        if (student.groupIds && student.groupIds.length > 0) {
+            const groupRows = student.groupIds.map(gId => ({
+                student_id: data.id,
+                group_id: gId,
+            }));
+            const { error: groupError } = await supabase
+                .from('student_groups')
+                .insert(groupRows);
+            if (groupError) console.error("Error adding student groups:", groupError);
+        }
+
         return data.id;
     } catch (error) {
         console.error("Error adding student:", error);
@@ -53,7 +65,6 @@ export const updateStudent = async (id: string, data: Partial<Student>): Promise
     try {
         const updates: any = {};
         if (data.fullName) updates.full_name = data.fullName;
-        if (data.groupId !== undefined) updates.group_id = data.groupId;
         if (data.parentPhone) {
             updates.parent_phone = data.parentPhone;
             updates.student_phone = data.parentPhone;
@@ -79,9 +90,25 @@ export const updateStudent = async (id: string, data: Partial<Student>): Promise
             console.error("Supabase detailed error:", error);
             throw error;
         }
+
+        // تحديث المجموعات في جدول student_groups
+        if (data.groupIds !== undefined) {
+            // حذف المجموعات القديمة
+            await supabase.from('student_groups').delete().eq('student_id', id);
+            // إضافة المجموعات الجديدة
+            if (data.groupIds.length > 0) {
+                const groupRows = data.groupIds.map(gId => ({
+                    student_id: id,
+                    group_id: gId,
+                }));
+                const { error: groupError } = await supabase
+                    .from('student_groups')
+                    .insert(groupRows);
+                if (groupError) console.error("Error updating student groups:", groupError);
+            }
+        }
     } catch (error: any) {
         console.error("Error updating student:", error);
-        // إظهار الرسالة بوضوح في الكونسول للمستخدم
         const errorMsg = error.message || error.details || JSON.stringify(error);
         console.error("Technical Message:", errorMsg);
         throw new Error(errorMsg);

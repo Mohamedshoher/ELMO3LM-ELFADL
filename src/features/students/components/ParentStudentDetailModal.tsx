@@ -29,7 +29,7 @@ export const ParentStudentDetailModal: React.FC<Props> = ({
     const { data: groups } = useGroups();
     const { data: courses } = useCourses();
 
-    const studentGroup = groups?.find((g: any) => g.id === student.groupId);
+    const studentGroup = groups?.find((g: any) => g.id === (student.groupId ?? student.groupIds?.[0] ?? null));
     const studentCourse = courses?.find((c: any) => c.id === studentGroup?.courseId);
 
     const {

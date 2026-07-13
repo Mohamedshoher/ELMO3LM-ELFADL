@@ -91,7 +91,7 @@ export default function AttendanceReportPage() {
             return true;
         });
         const gIds = filteredGroups.map(g => g.id);
-        return students.filter(s => s.status === 'active' && (user.role === 'director' || gIds.includes(s.groupId!))).map(s => s.id);
+        return students.filter(s => s.status === 'active' && (user.role === 'director' || (s.groupIds?.some(gid => gIds.includes(gid)) || gIds.includes(s.groupId!)))).map(s => s.id);
     }, [students, groups, user]);
 
     const groupIdsForQuery = useMemo(() => {
@@ -183,7 +183,7 @@ export default function AttendanceReportPage() {
         const wStartStr = `${weekStartDate.getFullYear()}-${String(weekStartDate.getMonth() + 1).padStart(2, '0')}-${String(weekStartDate.getDate()).padStart(2, '0')}`;
 
         return students
-            .filter(s => s.status === 'active' && (isControlRole || groupIds.includes(s.groupId!)))
+            .filter(s => s.status === 'active' && (isControlRole || s.groupIds?.some(gid => groupIds.includes(gid)) || groupIds.includes(s.groupId!)))
             .map(s => {
                 const history = reportData.attendanceMap[s.id] || [];
 
@@ -232,7 +232,7 @@ export default function AttendanceReportPage() {
 
                 return {
                     ...s,
-                    groupName: groups?.find(g => g.id === s.groupId)?.name || 'بدون حلقة',
+                    groupName: groups?.find(g => g.id === (s.groupId ?? s.groupIds?.[0] ?? null))?.name || 'بدون حلقة',
                     totalAbsences: totalAbsentWeek,
                     continuousAbsences,
                     absencePercentage,
@@ -247,7 +247,7 @@ export default function AttendanceReportPage() {
     // 3. الفلترة النهائية للعرض وحساب إحصائيات المخططات
     const { displayStudents, chartData } = useMemo(() => {
         const filtered = processedStudents.filter(s => {
-            const matchesGroup = groupId === 'all' || s.groupId === groupId;
+            const matchesGroup = groupId === 'all' || (s.groupIds?.includes(groupId) ?? false) || s.groupId === groupId;
             const matchesSearch = s.fullName.toLowerCase().includes(searchQuery.toLowerCase());
             const cL = Number(contLimit);
             const tL = Number(totalLimit);

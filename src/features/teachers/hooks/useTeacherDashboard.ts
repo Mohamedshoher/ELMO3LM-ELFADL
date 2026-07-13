@@ -36,6 +36,11 @@ export const useTeacherDashboard = (
 
         const teacherGroupIds = groups.filter(g => g.teacherId === teacher.id).map(g => g.id);
 
+        const hasGroup = (s: any) => {
+            const gids = s.groupIds?.length ? s.groupIds : (s.groupId ? [s.groupId] : []);
+            return gids.some((gid: string) => teacherGroupIds.includes(gid));
+        };
+
         // وظيفة للتحقق إذا كان المنشئ معلماً آخر
         const isOtherTeacher = (createdBy: string) => {
             if (!createdBy || createdBy === 'غير معروف') return false;
@@ -51,8 +56,7 @@ export const useTeacherDashboard = (
         // 1. حساب المصروفات المتوقعة
         const expectedExpenses = students
             .filter(s => {
-                const isMember = s.groupId && teacherGroupIds.includes(s.groupId) && s.status !== 'archived';
-                if (!isMember) return false;
+                if (!hasGroup(s) || s.status === 'archived') return false;
                 if (s.enrollmentDate) {
                     return s.enrollmentDate.substring(0, 7) <= selectedMonthRaw;
                 }
@@ -64,7 +68,7 @@ export const useTeacherDashboard = (
         const collectedPayments = allFees
             .filter(f => {
                 const student = students.find(s => s.id === f.studentId);
-                const isTeacherStudent = student && student.groupId && teacherGroupIds.includes(student.groupId);
+                const isTeacherStudent = student && hasGroup(student);
                 const isCollectedByTeacher = f.createdBy === teacher.fullName ||
                     f.createdBy === teacher.phone ||
                     (f.createdBy && normalize(f.createdBy) === normalize(teacher.fullName));
@@ -75,14 +79,14 @@ export const useTeacherDashboard = (
             })
             .map(f => {
                 const student = students.find(s => s.id === f.studentId);
-                const isTeacherStudent = student && student.groupId && teacherGroupIds.includes(student.groupId);
+                const isTeacherStudent = student && (student.groupIds?.some((gid: string) => teacherGroupIds.includes(gid)) || (student.groupId && teacherGroupIds.includes(student.groupId)));
                 return {
                     id: f.receipt,
                     feeId: f.id,
                     studentName: student?.fullName || 'غير معروف',
                     amount: Number(f.amount.replace(/[^0-9.]/g, '')) || 0,
                     date: f.date,
-                    groupName: groups.find(g => g.id === student?.groupId)?.name || '-',
+                    groupName: groups.find(g => g.id === (student?.groupId ?? student?.groupIds?.[0] ?? null))?.name || '-',
                     isTransferred: student && !isTeacherStudent // وسم "منقول" إذا لم يعد في مجموعات هذا المعلم
                 };
             });
@@ -92,7 +96,7 @@ export const useTeacherDashboard = (
         const managerCollectedPayments = allFees
             .filter(f => {
                 const student = students.find(s => s.id === f.studentId);
-                const isTeacherStudent = student && student.groupId && teacherGroupIds.includes(student.groupId);
+                const isTeacherStudent = student && hasGroup(student);
                 const isCollectedByThisTeacher = f.createdBy === teacher.fullName || (f.createdBy && normalize(f.createdBy) === normalize(teacher.fullName));
                 
                 // يظهر في "تحصيل المدير" فقط إذا كان الطالب حالياً في مجموعات المعلم
@@ -107,7 +111,7 @@ export const useTeacherDashboard = (
                     studentName: student?.fullName || 'غير معروف',
                     amount: Number(f.amount.replace(/[^0-9.]/g, '')) || 0,
                     date: f.date,
-                    groupName: groups.find(g => g.id === student?.groupId)?.name || '-'
+                    groupName: groups.find(g => g.id === (student?.groupId ?? student?.groupIds?.[0] ?? null))?.name || '-'
                 };
             });
         const totalCollectedByManager = managerCollectedPayments.reduce((sum, p) => sum + p.amount, 0);
@@ -119,7 +123,7 @@ export const useTeacherDashboard = (
         // حساب إجمالي محصل المجموعة (كل الطلاب التابعين لمجموعات المدرس)
         const totalCollectedForGroup = allFees.filter(f => {
             const student = students.find(s => s.id === f.studentId);
-            return student && student.groupId && teacherGroupIds.includes(student.groupId);
+            return student && hasGroup(student);
         }).reduce((sum, f) => sum + (Number(f.amount.replace(/[^0-9.]/g, '')) || 0), 0);
 
         if (isPartnership) {
@@ -177,8 +181,7 @@ export const useTeacherDashboard = (
         const exemptedStudentIds = exemptions.map((e: any) => e.student_id);
         const unpaidStudents = students
             .filter(s => {
-                const isMember = s.groupId && teacherGroupIds.includes(s.groupId) && s.status !== 'archived';
-                if (!isMember) return false;
+                if (!hasGroup(s) || s.status === 'archived') return false;
                 if (s.enrollmentDate) {
                     return s.enrollmentDate.substring(0, 7) <= selectedMonthRaw;
                 }
@@ -193,7 +196,7 @@ export const useTeacherDashboard = (
                 return {
                     id: student.id,
                     name: student.fullName,
-                    groupName: groups.find(g => g.id === student.groupId)?.name || '-',
+                    groupName: groups.find(g => g.id === (student.groupId ?? student.groupIds?.[0] ?? null))?.name || '-',
                     expectedAmount,
                     paidAmount: totalPaidByStudent,
                     remaining: Math.max(0, remaining),
