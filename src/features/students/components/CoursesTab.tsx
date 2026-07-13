@@ -9,7 +9,7 @@ export default function CoursesTab({ student, records }: any) {
     const queryClient = useQueryClient();
     const { data: groups } = useGroups();
     const { data: courses } = useCourses();
-    const { exams, listens } = records || {};
+    const { exams } = records || {};
 
     const freshStudent = useMemo(() => {
         const allStudentsData = queryClient.getQueriesData<any>({ queryKey: ['students'] });
@@ -25,12 +25,10 @@ export default function CoursesTab({ student, records }: any) {
     const studentGroup = groups?.find((g: any) => g.id === freshStudent.groupId);
     const course = courses?.find((c: any) => c.id === studentGroup?.courseId);
 
-    const partialExams = (exams || []).filter((e: any) => e.courseId && e.type !== 'إكمال دورة');
-    const completionExam = (exams || []).find((e: any) => e.courseId && e.type === 'إكمال دورة');
-    const courseListens = (listens || []).filter((r: any) => !r.courseId || r.courseId === course?.id);
+    const partialExams = (exams || []).filter((e: any) => e.courseId === course?.id && e.type !== 'إكمال دورة');
+    const completionExam = (exams || []).find((e: any) => e.courseId === course?.id && e.type === 'إكمال دورة');
     const totalTested = partialExams.reduce((sum: number, e: any) => sum + (e.lecturesTested || 0), 0);
-    const totalListened = courseListens.reduce((sum: number, r: any) => sum + (r.lecturesCount || 1), 0);
-    const totalCompleted = totalTested + totalListened;
+    const totalCompleted = totalTested;
     const totalLectures = course?.lecturesCount || 0;
     const progress = totalLectures > 0 ? Math.min(Math.round((totalCompleted / totalLectures) * 100), 100) : 0;
     const isCompleted = progress >= 100 || !!freshStudent.courseCompletedAt;

@@ -196,6 +196,7 @@ export const useStudentRecords = (studentId: string) => {
         },
         onSettled: () => {
             queryClient.invalidateQueries({ queryKey: ['listens', studentId] });
+            queryClient.invalidateQueries({ queryKey: ['all-listens'] });
         }
     });
 
@@ -203,6 +204,7 @@ export const useStudentRecords = (studentId: string) => {
         mutationFn: deleteListenRecord,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['listens', studentId] });
+            queryClient.invalidateQueries({ queryKey: ['all-listens'] });
         }
     });
 

@@ -133,41 +133,6 @@ export default function ExamsTab({ student, records }: any) {
 
     return (
         <div className="space-y-4">
-            {/* بطاقة الدورة */}
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 sm:p-5">
-                <div className="flex items-center gap-2 sm:gap-3 mb-4">
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-50 rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0">
-                        <BookOpen size={18} className="text-purple-600" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                        <h3 className="text-sm sm:text-base font-black text-gray-900 truncate">{studentCourse.name}</h3>
-                        <p className="text-[10px] sm:text-xs text-gray-500 font-bold">{studentCourse.lecturesCount} محاضرات</p>
-                    </div>
-                    <span className={cn(
-                        "px-2 sm:px-3 py-0.5 sm:py-1 rounded-lg sm:rounded-xl text-[9px] sm:text-xs font-bold flex items-center gap-1 shrink-0",
-                        isCompleted
-                            ? "bg-green-50 text-green-600 border border-green-100"
-                            : "bg-blue-50 text-blue-600 border border-blue-100"
-                    )}>
-                        {isCompleted ? <Award size={12} /> : <Clock size={12} />}
-                        {isCompleted ? 'مكتملة' : 'مستمرة'}
-                    </span>
-                </div>
-
-                {/* شريط التقدم */}
-                <div className="mb-2">
-                    <div className="flex items-center justify-between mb-2">
-                        <span className="text-[10px] sm:text-xs font-bold text-gray-500">التقدم</span>
-                        <span className="text-[10px] sm:text-xs font-black text-gray-700">{totalTested} / {totalLectures}</span>
-                    </div>
-                    <div className="w-full h-2.5 sm:h-3 bg-gray-100 rounded-full overflow-hidden">
-                        <div className={cn("h-full rounded-full transition-all", progressPct >= 100 ? "bg-green-500" : "bg-purple-500")}
-                            style={{ width: `${progressPct}%` }} />
-                    </div>
-                    <p className="text-[9px] sm:text-[10px] text-gray-400 font-bold mt-1">{progressPct}%</p>
-                </div>
-            </div>
-
             {/* أيقونة تسجيل اختبار جزئي */}
             {canEdit && !isCompleted && (
                 <button
@@ -294,6 +259,41 @@ export default function ExamsTab({ student, records }: any) {
                     </button>
                 </div>
             )}
+
+            {/* بطاقة الدورة */}
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 sm:p-5">
+                <div className="flex items-center gap-2 sm:gap-3 mb-4">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-50 rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0">
+                        <BookOpen size={18} className="text-purple-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                        <h3 className="text-sm sm:text-base font-black text-gray-900 truncate">{studentCourse.name}</h3>
+                        <p className="text-[10px] sm:text-xs text-gray-500 font-bold">{studentCourse.lecturesCount} محاضرات</p>
+                    </div>
+                    <span className={cn(
+                        "px-2 sm:px-3 py-0.5 sm:py-1 rounded-lg sm:rounded-xl text-[9px] sm:text-xs font-bold flex items-center gap-1 shrink-0",
+                        isCompleted
+                            ? "bg-green-50 text-green-600 border border-green-100"
+                            : "bg-blue-50 text-blue-600 border border-blue-100"
+                    )}>
+                        {isCompleted ? <Award size={12} /> : <Clock size={12} />}
+                        {isCompleted ? 'مكتملة' : 'مستمرة'}
+                    </span>
+                </div>
+
+                {/* شريط التقدم */}
+                <div className="mb-2">
+                    <div className="flex items-center justify-between mb-2">
+                        <span className="text-[10px] sm:text-xs font-bold text-gray-500">التقدم</span>
+                        <span className="text-[10px] sm:text-xs font-black text-gray-700">{totalTested} / {totalLectures}</span>
+                    </div>
+                    <div className="w-full h-2.5 sm:h-3 bg-gray-100 rounded-full overflow-hidden">
+                        <div className={cn("h-full rounded-full transition-all", progressPct >= 100 ? "bg-green-500" : "bg-purple-500")}
+                            style={{ width: `${progressPct}%` }} />
+                    </div>
+                    <p className="text-[9px] sm:text-[10px] text-gray-400 font-bold mt-1">{progressPct}%</p>
+                </div>
+            </div>
 
             {/* إلغاء الإكمال */}
             {canEdit && isCompleted && (

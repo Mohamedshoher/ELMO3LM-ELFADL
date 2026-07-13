@@ -353,13 +353,10 @@ export default function GroupsPage() {
                                                     </button>
                                                 </div>
                                             )}
-                                            <span className={cn("px-2 py-0.5 rounded-[8px] text-[10px] font-black uppercase tracking-wider", group.color)}>
-                                                {group.count} طلاب
-                                            </span>
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center justify-between mt-auto">
+                                    <div>
                                         {editingGroupId === group.id ? (
                                             <div className="flex items-center gap-1 w-full relative z-10">
                                                 <select
@@ -380,27 +377,33 @@ export default function GroupsPage() {
                                                 </button>
                                             </div>
                                         ) : (
-                                            <>
-                                                <div className="flex flex-col text-right min-w-0 gap-1">
+                                            <div className="space-y-1.5">
+                                                <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 min-w-0">
                                                     {group.courseName && (
-                                                        <span className="text-[11px] font-black text-purple-500 truncate leading-tight">
+                                                        <span className="text-[10px] sm:text-[11px] font-black text-purple-500 truncate leading-tight">
                                                             {group.courseName}
                                                         </span>
                                                     )}
-                                                    <span className="text-base font-bold text-gray-500 truncate leading-tight">{group.teacher}</span>
-                                                </div>
-
-                                                {group.count > 0 && attendanceMap && (
-                                                    <span className={cn(
-                                                        "text-[10px] font-black px-3 py-1 rounded-full border shrink-0",
-                                                        group.attendancePercentage >= 90 ? "bg-green-50 text-green-600 border-green-100" :
-                                                            group.attendancePercentage >= 75 ? "bg-blue-50 text-blue-600 border-blue-100" :
-                                                                "bg-red-50 text-red-600 border-red-100"
-                                                    )}>
-                                                        {group.attendancePercentage}% حضور
+                                                    <span className="text-xs sm:text-sm font-bold text-gray-500 truncate leading-tight">
+                                                        {group.teacher}
                                                     </span>
-                                                )}
-                                            </>
+                                                </div>
+                                                <div className="flex items-center gap-3">
+                                                    <span className={cn("px-2 py-0.5 rounded-[8px] text-[10px] font-black uppercase tracking-wider", group.color)}>
+                                                        {group.count} طلاب
+                                                    </span>
+                                                    {group.count > 0 && attendanceMap && (
+                                                        <span className={cn(
+                                                            "text-[10px] font-black px-3 py-1 rounded-full border",
+                                                            group.attendancePercentage >= 90 ? "bg-green-50 text-green-600 border-green-100" :
+                                                                group.attendancePercentage >= 75 ? "bg-blue-50 text-blue-600 border-blue-100" :
+                                                                    "bg-red-50 text-red-600 border-red-100"
+                                                        )}>
+                                                            {group.attendancePercentage}% حضور
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
                                         )}
                                     </div>
                             </div>

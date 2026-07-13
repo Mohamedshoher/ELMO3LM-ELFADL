@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { X, Calendar, CreditCard, BookOpen, FileText, Award, Headphones } from 'lucide-react';
+import { X, Calendar, BookOpen, FileText, Award, Headphones } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import { useStudents } from '../hooks/useStudents';
 import { useStudentRecords } from '../hooks/useStudentRecords';
@@ -10,7 +10,7 @@ import { StudentDetailModalProps } from '../hooks/types';
 // استيراد المكونات الفرعية
 import ModalHeader from './ModalHeader';
 import AttendanceTab from './AttendanceTab';
-import FeesTab from './FeesTab';
+
 import ExamsTab from './ExamsTab';
 
 import CoursesTab from './CoursesTab';
@@ -79,7 +79,7 @@ export default function StudentDetailModal({
         { id: 'courses', label: 'الدورات', icon: Award },
         { id: 'followup', label: 'المتابعات', icon: Headphones },
         { id: 'exams', label: 'سجل الاختبارات', icon: BookOpen },
-        { id: 'fees', label: 'سجل المصروفات', icon: CreditCard },
+        // { id: 'fees', label: 'سجل المصروفات', icon: CreditCard },
         { id: 'notes', label: 'سجل الملحوظات', icon: FileText },
     ];
 
@@ -116,7 +116,7 @@ export default function StudentDetailModal({
                 {/* 3. محتوى التبويبات (يتم استدعاء المكون بناءً على التبويب النشط) */}
                 <div className="flex-1 overflow-y-auto p-5 md:p-6 text-right">
                     {activeTab === 'attendance' && <AttendanceTab student={student} records={studentRecords} />}
-                    {activeTab === 'fees' && <FeesTab student={student} records={studentRecords} />}
+
                     {activeTab === 'exams' && <ExamsTab student={student} records={studentRecords} />}
                     {activeTab === 'notes' && <NotesTab student={student} records={studentRecords} />}
                     {activeTab === 'courses' && <CoursesTab student={student} records={studentRecords} />}

@@ -705,15 +705,15 @@ export default function StudentList({ groupId, customTitle }: StudentListProps) 
                                         return (
                                             <div className="mt-0.5">
                                                 <div className="flex items-center gap-1.5">
-                                                    <BarChart3 size={10} className="text-purple-400 shrink-0" />
-                                                    <span className="text-[9px] sm:text-[10px] text-purple-500 font-bold truncate">
+                                                    <BarChart3 size={12} className="text-blue-400 shrink-0" />
+                                                    <span className="text-xs sm:text-sm text-purple-500 font-bold truncate">
                                                         {courseProgressMap[student.id].courseName}
                                                     </span>
                                                     <span className={cn(
-                                                        "text-[8px] sm:text-[9px] font-black px-1.5 py-0.5 rounded-full",
+                                                        "text-xs sm:text-sm font-black px-2 py-0.5 rounded-full",
                                                         courseProgressMap[student.id].progress >= 100
                                                             ? "bg-green-50 text-green-600"
-                                                            : "bg-purple-50 text-purple-600"
+                                                            : "bg-blue-50 text-blue-600"
                                                     )}>
                                                         {courseProgressMap[student.id].progress}%
                                                     </span>

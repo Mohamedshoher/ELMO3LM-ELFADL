@@ -162,19 +162,29 @@ export default function ExamsReportPage() {
 
         return base
             .map((s: any) => {
-                const progress = getStudentCourseProgress(s);
-                if (!progress.course || progress.totalCompleted === 0) return null;
-                const groupName = groups?.find((g: any) => g.id === s.groupId)?.name || 'غير محدد';
+                const group = groups?.find((g: any) => g.id === s.groupId);
+                const course = courses?.find((c: any) => c.id === group?.courseId);
+                if (!course) return null;
+                const groupName = group?.name || 'غير محدد';
+
+                const courseExams = allExams.filter((e: any) => e.courseId === course.id && e.studentId === s.id);
+                const totalTested = courseExams.reduce((sum: number, e: any) => sum + (e.lecturesTested || 0), 0);
+                if (totalTested === 0) return null;
+                const required = course.lecturesCount || 0;
+                const pct = required > 0 ? Math.min(Math.round((totalTested / required) * 100), 100) : 0;
+
                 return {
                     ...s,
                     groupName,
-                    ...progress,
+                    totalCompleted: totalTested,
+                    totalRequired: required,
+                    progress: pct,
                 };
             })
             .filter((s: any) => s !== null)
             .sort((a: any, b: any) => b.totalCompleted - a.totalCompleted)
             .map((s: any, i: number) => ({ ...s, rank: i + 1 }));
-    }, [students, groups, selectedGroupId, user, assignedGroupIds, getStudentCourseProgress]);
+    }, [students, groups, selectedGroupId, user, assignedGroupIds, allExams, courses]);
 
     // --- و- بيانات أداء المجموعات في نظام الدورات ---
     const coursePerformanceData = useMemo(() => {
@@ -183,32 +193,45 @@ export default function ExamsReportPage() {
             baseGroups = baseGroups.filter((g: any) => assignedGroupIds.includes(g.id));
         }
 
+        if (selectedGroupId !== 'all') {
+            baseGroups = baseGroups.filter((g: any) => g.id === selectedGroupId);
+        }
+
         return baseGroups.map((g: any) => {
             const groupStudents = (students || []).filter((s: any) => s.groupId === g.id && s.status === 'active');
             let totalRequired = 0;
-            let totalCompleted = 0;
+            let totalTested = 0;
             const studentDetails = groupStudents.map((s: any) => {
-                const progress = getStudentCourseProgress(s);
-                if (progress.course) {
-                    totalRequired += progress.totalRequired;
-                    totalCompleted += progress.totalCompleted;
-                }
-                return { ...s, ...progress };
-            }).filter((s: any) => s.course);
+                const group = groups?.find((gr: any) => gr.id === s.groupId);
+                const course = courses?.find((c: any) => c.id === group?.courseId);
+                if (!course) return null;
 
-            const avgProgress = totalRequired > 0 ? Math.round((totalCompleted / totalRequired) * 100) : 0;
+                const courseExams = allExams.filter((e: any) => e.courseId === course.id && e.studentId === s.id);
+                const testedLectures = courseExams.reduce((sum: number, e: any) => sum + (e.lecturesTested || 0), 0);
+                const required = course.lecturesCount || 0;
+                const remaining = Math.max(0, required - testedLectures);
+                const pct = required > 0 ? Math.min(Math.round((testedLectures / required) * 100), 100) : 0;
+                const groupName = groups?.find((gr: any) => gr.id === s.groupId)?.name || 'غير محدد';
+
+                totalRequired += required;
+                totalTested += testedLectures;
+
+                return { ...s, groupName, course, totalCompleted: testedLectures, totalRequired: required, remaining, progress: pct };
+            }).filter((s: any) => s !== null);
+
+            const avgProgress = totalRequired > 0 ? Math.round((totalTested / totalRequired) * 100) : 0;
 
             return {
                 id: g.id,
                 name: g.name,
                 totalStudents: studentDetails.length,
                 totalRequired,
-                totalCompleted,
+                totalCompleted: totalTested,
                 avgProgress,
                 studentDetails
             };
         }).filter((g: any) => g.totalStudents > 0);
-    }, [groups, students, user, assignedGroupIds, getStudentCourseProgress]);
+    }, [groups, students, user, assignedGroupIds, allExams, courses, selectedGroupId]);
 
     // --- ز- بيانات متابعة الاستماع ---
     const listeningProgressData = useMemo(() => {
