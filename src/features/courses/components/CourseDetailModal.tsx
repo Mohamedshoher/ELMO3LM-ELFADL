@@ -127,7 +127,7 @@ export default function CourseDetailModal({ course, isOpen, onClose }: Props) {
                                 const pct = course.lecturesCount > 0
                                     ? Math.min(Math.round((s.lecturesTested / course.lecturesCount) * 100), 100)
                                     : 0;
-                                const isCompleted = !!s.courseCompletedAt;
+                                const isCompleted = !!s.courseCompletedAt || pct >= 100;
 
                                 return (
                                     <div key={s.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
