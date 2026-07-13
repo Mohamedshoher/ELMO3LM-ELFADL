@@ -22,7 +22,11 @@ export const updateCourse = async (course: { id: string; name?: string; lectures
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(course),
         });
-        if (!res.ok) throw new Error('Failed to update course');
+        if (!res.ok) {
+            const errText = await res.text();
+            console.error("API error updating course:", errText);
+            throw new Error(errText || 'Failed to update course');
+        }
     } catch (error) {
         console.error("Error updating course:", error);
         throw error;

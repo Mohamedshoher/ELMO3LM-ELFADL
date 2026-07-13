@@ -80,14 +80,16 @@ export async function PUT(request: NextRequest) {
             .from('courses')
             .update(dbUpdates)
             .eq('id', id)
-            .select()
-            .single();
+            .select();
 
         if (error) {
             return NextResponse.json({ error: error.message }, { status: 500 });
         }
+        if (!data || data.length === 0) {
+            return NextResponse.json({ error: 'Course not found' }, { status: 404 });
+        }
 
-        return NextResponse.json(data);
+        return NextResponse.json(data[0]);
     } catch (error: any) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }

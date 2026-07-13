@@ -85,9 +85,20 @@ export default function AddCourseModal({ isOpen, onClose, editCourse }: AddCours
         const ext = imageFile.name.split('.').pop();
         const filePath = `courses/${crypto.randomUUID()}.${ext}`;
 
+        // التأكد من وجود البوكس
+        const { data: buckets } = await supabase.storage.listBuckets();
+        const bucketExists = buckets?.some(b => b.name === 'course-images');
+        if (!bucketExists) {
+            const { error: createError } = await supabase.storage.createBucket('course-images', { public: true });
+            if (createError) {
+                console.error('Error creating bucket:', createError);
+                // قد لا يكون لدى المستخدم صلاحية إنشاء البوكس، نحاول الرفع مباشرة
+            }
+        }
+
         const { error } = await supabase.storage
             .from('course-images')
-            .upload(filePath, imageFile);
+            .upload(filePath, imageFile, { upsert: true });
 
         if (error) {
             console.error('Error uploading image:', error);
