@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { FadeIn, SlideIn } from '@/components/ui/transition';
 import { Button } from "@/components/ui/button";
 import { PresenceTracker } from "@/components/PresenceTracker";
+import { useAutoAttendance } from "@/features/attendance/hooks/useAutoAttendance";
 import { useChatStore } from "@/store/useChatStore";
 import { playNotificationSound } from "@/lib/notificationSound";
 import { chatService } from "@/features/chat/services/chatService";
@@ -32,6 +33,8 @@ export default function ParentDashboard() {
     useEffect(() => {
         if (!user) router.replace('/parent-login');
     }, [user, router]);
+    useAutoAttendance();
+
     const { data: groups } = useGroups();
     const { data: courses } = useCourses();
     const { data: teachers } = useTeachers();

@@ -110,20 +110,25 @@ export default function AddCourseModal({ isOpen, onClose, editCourse }: AddCours
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setUploading(true);
+
+        let imageUrl: string | null | undefined = undefined;
         try {
-            const imageUrl = await uploadImage();
+            imageUrl = await uploadImage();
+        } catch (err: any) {
+            console.error('فشل رفع الصورة:', err);
+        }
+
+        try {
             const payload = { name, lecturesCount, link, imageUrl, bookLink: bookLink || undefined, categoryId: categoryId || undefined };
             if (isEditing) {
-                updateMutation.mutate({ id: editCourse.id, ...payload }, {
-                    onSuccess: () => { onClose(); }
-                });
+                await updateMutation.mutateAsync({ id: editCourse.id, ...payload });
             } else {
-                addMutation.mutate(payload, {
-                    onSuccess: () => { onClose(); }
-                });
+                await addMutation.mutateAsync(payload);
             }
+            onClose();
         } catch (err: any) {
-            alert(err.message || 'حدث خطأ أثناء رفع الصورة');
+            console.error('خطأ في حفظ الدورة:', err);
+            alert('حدث خطأ أثناء حفظ الدورة، يرجى المحاولة مرة أخرى');
         } finally {
             setUploading(false);
         }

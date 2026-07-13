@@ -664,6 +664,25 @@ export const getAllListens = async (monthKey?: string, periodHalf?: 1 | 2, stude
     }
 };
 
+export const getListensSummaryByStudent = async (studentIds: string[]): Promise<Record<string, number>> => {
+    if (studentIds.length === 0) return {};
+    const { data, error } = await supabase
+        .from('student_listens')
+        .select('student_id, lectures_count')
+        .in('student_id', studentIds);
+
+    if (error) {
+        console.error('Error fetching listens summary:', error);
+        return {};
+    }
+
+    const summary: Record<string, number> = {};
+    (data || []).forEach(row => {
+        summary[row.student_id] = (summary[row.student_id] || 0) + (row.lectures_count || 0);
+    });
+    return summary;
+};
+
 export const addListenRecord = async (record: Omit<ListenRecord, 'id'>): Promise<ListenRecord> => {
     if (record.courseId) {
         const { data: course, error: courseError } = await supabase

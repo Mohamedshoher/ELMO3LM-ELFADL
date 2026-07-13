@@ -62,42 +62,44 @@ export default function CoursesTab({ student, records }: any) {
                     ? "bg-gradient-to-l from-green-50 to-emerald-50 border-green-200"
                     : "bg-white border-gray-100"
             )}>
-                <div className="p-5">
-                    <div className="flex items-center gap-3 mb-4">
+                <div className="p-4 sm:p-5">
+                    <div className="flex items-center gap-2 sm:gap-3 mb-4">
                         <div className={cn(
-                            "w-12 h-12 rounded-2xl flex items-center justify-center",
+                            "w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0",
                             isCompleted ? "bg-green-100" : "bg-purple-50"
                         )}>
-                            <BookOpen size={22} className={isCompleted ? "text-green-600" : "text-purple-600"} />
+                            <BookOpen size={18} className={isCompleted ? "text-green-600" : "text-purple-600"} />
                         </div>
-                        <div className="flex-1">
-                            <h3 className="text-base font-black text-gray-900">{course.name}</h3>
-                            <p className="text-xs text-gray-500 font-bold">{course.lecturesCount} محاضرات</p>
+                        <div className="flex-1 min-w-0">
+                            <h3 className="text-sm sm:text-base font-black text-gray-900 truncate">{course.name}</h3>
+                            <p className="text-[10px] sm:text-xs text-gray-500 font-bold">{course.lecturesCount} محاضرات</p>
                         </div>
                         <span className={cn(
-                            "px-3 py-1 rounded-xl text-xs font-bold flex items-center gap-1.5",
+                            "px-2 sm:px-3 py-0.5 sm:py-1 rounded-lg sm:rounded-xl text-[9px] sm:text-xs font-bold flex items-center gap-1 shrink-0",
                             isCompleted
                                 ? "bg-green-100 text-green-700 border border-green-200"
                                 : "bg-blue-50 text-blue-600 border border-blue-100"
                         )}>
-                            {isCompleted ? <Award size={14} /> : <BookOpen size={14} />}
+                            {isCompleted ? <Award size={12} /> : <BookOpen size={12} />}
                             {isCompleted ? 'مكتملة' : 'مستمرة'}
                         </span>
                     </div>
 
-                    <div className="flex flex-wrap gap-3 mb-4">
+                    <div className="flex flex-row gap-2 mb-4">
                         {course.link && (
                             <a href={course.link} target="_blank" rel="noopener noreferrer"
-                                className="px-5 py-3 rounded-2xl text-sm font-bold bg-blue-600 text-white border border-blue-600 flex items-center gap-2 hover:bg-blue-700 transition-all shadow-lg shadow-blue-200">
-                                <ExternalLink size={18} />
-                                رابط الدورة
+                                className="flex-1 px-3 sm:px-5 py-2.5 sm:py-3 rounded-2xl text-[11px] sm:text-sm font-bold bg-gradient-to-l from-blue-600 to-blue-500 text-white flex items-center justify-center gap-1.5 sm:gap-2 hover:from-blue-700 hover:to-blue-600 transition-all shadow-lg shadow-blue-200/40 active:scale-[0.97]">
+                                <ExternalLink size={15} />
+                                <span className="hidden xs:inline">رابط الدورة</span>
+                                <span className="xs:hidden">الدورة</span>
                             </a>
                         )}
                         {course.bookLink && (
                             <a href={course.bookLink} target="_blank" rel="noopener noreferrer"
-                                className="px-5 py-3 rounded-2xl text-sm font-bold bg-amber-500 text-white border border-amber-500 flex items-center gap-2 hover:bg-amber-600 transition-all shadow-lg shadow-amber-200">
-                                <Book size={18} />
-                                رابط الكتاب
+                                className="flex-1 px-3 sm:px-5 py-2.5 sm:py-3 rounded-2xl text-[11px] sm:text-sm font-bold bg-gradient-to-l from-amber-500 to-orange-500 text-white flex items-center justify-center gap-1.5 sm:gap-2 hover:from-amber-600 hover:to-orange-600 transition-all shadow-lg shadow-amber-200/40 active:scale-[0.97]">
+                                <Book size={15} />
+                                <span className="hidden xs:inline">رابط الكتاب</span>
+                                <span className="xs:hidden">الكتاب</span>
                             </a>
                         )}
                     </div>
@@ -105,33 +107,33 @@ export default function CoursesTab({ student, records }: any) {
                     {/* شريط التقدم */}
                     <div className="mb-4">
                         <div className="flex items-center justify-between mb-2">
-                            <span className="text-xs font-bold text-gray-500 flex items-center gap-1.5">
-                                <BarChart3 size={14} />
+                            <span className="text-[10px] sm:text-xs font-bold text-gray-500 flex items-center gap-1.5">
+                                <BarChart3 size={12} />
                                 التقدم
                             </span>
                             <span className={cn(
-                                "text-xs font-black",
+                                "text-[10px] sm:text-xs font-black",
                                 isCompleted ? "text-green-700" : "text-gray-700"
                             )}>
                                 {totalCompleted} / {totalLectures} محاضرة
                             </span>
                         </div>
-                        <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden">
+                        <div className="w-full h-2.5 sm:h-3 bg-gray-100 rounded-full overflow-hidden">
                             <div className={cn(
                                 "h-full rounded-full transition-all duration-500",
                                 progress >= 100 ? "bg-green-500" : "bg-purple-500"
                             )} style={{ width: `${progress}%` }} />
                         </div>
-                        <p className="text-[10px] text-gray-400 font-bold mt-1">{progress}%</p>
+                        <p className="text-[9px] sm:text-[10px] text-gray-400 font-bold mt-1">{progress}%</p>
                     </div>
 
                     {/* التقدير النهائي - يظهر فقط عند إكمال الدورة */}
                     {isCompleted && freshStudent.courseFinalGrade && (
-                        <div className="bg-white/80 border border-green-200 rounded-xl px-4 py-3 mb-4">
+                        <div className="bg-white/80 border border-green-200 rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 mb-4">
                             <div className="flex items-center justify-between">
-                                <span className="text-sm font-bold text-green-700">التقدير العام</span>
+                                <span className="text-xs sm:text-sm font-bold text-green-700">التقدير العام</span>
                                 <span className={cn(
-                                    "text-sm font-black px-3 py-1 rounded-lg",
+                                    "text-xs sm:text-sm font-black px-2 sm:px-3 py-0.5 sm:py-1 rounded-lg",
                                     freshStudent.courseFinalGrade === 'ممتاز' && "bg-green-100 text-green-700",
                                     freshStudent.courseFinalGrade === 'جيد جداً' && "bg-blue-100 text-blue-700",
                                     freshStudent.courseFinalGrade === 'جيد' && "bg-amber-100 text-amber-700"
@@ -140,8 +142,8 @@ export default function CoursesTab({ student, records }: any) {
                                 </span>
                             </div>
                             {completionExam?.recordedBy && (
-                                <div className="flex items-center gap-1.5 mt-2 text-[10px] text-green-600 font-bold">
-                                    <User size={12} />
+                                <div className="flex items-center gap-1.5 mt-2 text-[9px] sm:text-[10px] text-green-600 font-bold">
+                                    <User size={11} />
                                     الممتحن: {completionExam.recordedBy}
                                 </div>
                             )}
@@ -149,21 +151,21 @@ export default function CoursesTab({ student, records }: any) {
                     )}
 
                     {/* التواريخ */}
-                    <div className="space-y-2 text-sm">
+                    <div className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm">
                         {registeredDate && (
-                            <div className="flex items-center justify-between py-2 border-b border-gray-50">
+                            <div className="flex items-center justify-between py-1.5 sm:py-2 border-b border-gray-50">
                                 <span className="text-gray-400 font-bold">تاريخ التسجيل</span>
                                 <span className="text-gray-700 font-bold">{registeredDate}</span>
                             </div>
                         )}
                         {completedDate && (
-                            <div className="flex items-center justify-between py-2 border-b border-gray-50">
+                            <div className="flex items-center justify-between py-1.5 sm:py-2 border-b border-gray-50">
                                 <span className="text-gray-400 font-bold">تاريخ الإتمام</span>
                                 <span className="text-green-700 font-bold">{completedDate}</span>
                             </div>
                         )}
                         {studentGroup && (
-                            <div className="flex items-center justify-between py-2">
+                            <div className="flex items-center justify-between py-1.5 sm:py-2">
                                 <span className="text-gray-400 font-bold">المجموعة</span>
                                 <span className="text-gray-700 font-bold">{studentGroup.name}</span>
                             </div>

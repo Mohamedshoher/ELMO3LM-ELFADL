@@ -30,26 +30,23 @@ export const updateCourse = async (course: { id: string; name?: string; lectures
 };
 
 export const addCourse = async (course: { name: string; lecturesCount: number; link: string; bookLink?: string; categoryId?: string; imageUrl?: string | null }): Promise<string> => {
-    try {
-        const { data, error } = await supabase
-            .from('courses')
-            .insert([{
-                name: course.name,
-                lectures_count: course.lecturesCount,
-                link: course.link,
-                book_link: course.bookLink || null,
-                category_id: course.categoryId || null,
-                image_url: course.imageUrl || null,
-            }])
-            .select('id')
-            .single();
+    const insertData: Record<string, any> = {
+        name: course.name,
+        lectures_count: course.lecturesCount,
+        link: course.link,
+    };
+    if (course.bookLink) insertData.book_link = course.bookLink;
+    if (course.categoryId) insertData.category_id = course.categoryId;
+    if (course.imageUrl) insertData.image_url = course.imageUrl;
 
-        if (error) throw error;
-        return data.id;
-    } catch (error) {
-        console.error("Error adding course:", error);
-        throw error;
-    }
+    const { data, error } = await supabase
+        .from('courses')
+        .insert([insertData])
+        .select('id')
+        .single();
+
+    if (error) throw error;
+    return data.id;
 };
 
 

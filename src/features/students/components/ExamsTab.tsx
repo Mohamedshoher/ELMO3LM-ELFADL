@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Trash2, BookOpen, BarChart3, MapPin, User, Award, CheckCircle, X, GraduationCap, Clock } from 'lucide-react';
+import { Trash2, BookOpen, BarChart3, MapPin, User, Award, CheckCircle, X, GraduationCap, Clock, Plus } from 'lucide-react';
 import { Button } from '../../../components/ui/button';
 import { cn } from '../../../lib/utils';
 import { useAuthStore } from '../../../store/useAuthStore';
@@ -25,10 +25,12 @@ export default function ExamsTab({ student, records }: any) {
     // اختبار جزئي
     const [lecturesTested, setLecturesTested] = useState(1);
     const [partialLocation, setPartialLocation] = useState('حضوري');
+    const [showPartialForm, setShowPartialForm] = useState(false);
 
     // إكمال الدورة
     const [finalGrade, setFinalGrade] = useState('جيد');
     const [finalLocation, setFinalLocation] = useState('حضوري');
+    const [showFinalForm, setShowFinalForm] = useState(false);
     const [submitting, setSubmitting] = useState(false);
 
     const partialExams = (exams || []).filter((e: any) => e.courseId && e.type !== 'إكمال دورة');
@@ -132,22 +134,22 @@ export default function ExamsTab({ student, records }: any) {
     return (
         <div className="space-y-4">
             {/* بطاقة الدورة */}
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-                <div className="flex items-center gap-3 mb-4">
-                    <div className="w-12 h-12 bg-purple-50 rounded-2xl flex items-center justify-center">
-                        <BookOpen size={22} className="text-purple-600" />
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 sm:p-5">
+                <div className="flex items-center gap-2 sm:gap-3 mb-4">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-50 rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0">
+                        <BookOpen size={18} className="text-purple-600" />
                     </div>
-                    <div className="flex-1">
-                        <h3 className="text-base font-black text-gray-900">{studentCourse.name}</h3>
-                        <p className="text-xs text-gray-500 font-bold">{studentCourse.lecturesCount} محاضرات</p>
+                    <div className="flex-1 min-w-0">
+                        <h3 className="text-sm sm:text-base font-black text-gray-900 truncate">{studentCourse.name}</h3>
+                        <p className="text-[10px] sm:text-xs text-gray-500 font-bold">{studentCourse.lecturesCount} محاضرات</p>
                     </div>
                     <span className={cn(
-                        "px-3 py-1 rounded-xl text-xs font-bold flex items-center gap-1.5",
+                        "px-2 sm:px-3 py-0.5 sm:py-1 rounded-lg sm:rounded-xl text-[9px] sm:text-xs font-bold flex items-center gap-1 shrink-0",
                         isCompleted
                             ? "bg-green-50 text-green-600 border border-green-100"
                             : "bg-blue-50 text-blue-600 border border-blue-100"
                     )}>
-                        {isCompleted ? <Award size={14} /> : <Clock size={14} />}
+                        {isCompleted ? <Award size={12} /> : <Clock size={12} />}
                         {isCompleted ? 'مكتملة' : 'مستمرة'}
                     </span>
                 </div>
@@ -155,68 +157,112 @@ export default function ExamsTab({ student, records }: any) {
                 {/* شريط التقدم */}
                 <div className="mb-2">
                     <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-bold text-gray-500">التقدم</span>
-                        <span className="text-xs font-black text-gray-700">{totalTested} / {totalLectures}</span>
+                        <span className="text-[10px] sm:text-xs font-bold text-gray-500">التقدم</span>
+                        <span className="text-[10px] sm:text-xs font-black text-gray-700">{totalTested} / {totalLectures}</span>
                     </div>
-                    <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden">
+                    <div className="w-full h-2.5 sm:h-3 bg-gray-100 rounded-full overflow-hidden">
                         <div className={cn("h-full rounded-full transition-all", progressPct >= 100 ? "bg-green-500" : "bg-purple-500")}
                             style={{ width: `${progressPct}%` }} />
                     </div>
-                    <p className="text-[10px] text-gray-400 font-bold mt-1">{progressPct}%</p>
+                    <p className="text-[9px] sm:text-[10px] text-gray-400 font-bold mt-1">{progressPct}%</p>
                 </div>
             </div>
 
-            {/* اختبار جزئي */}
+            {/* أيقونة تسجيل اختبار جزئي */}
             {canEdit && !isCompleted && (
-                <div className="bg-gray-50 p-5 rounded-[24px] border border-gray-100 space-y-4">
-                    <h4 className="font-bold text-sm flex items-center gap-2">
-                        <BookOpen size={16} className="text-purple-500" />
-                        تسجيل اختبار جزئي
-                    </h4>
-                    <div className="grid grid-cols-2 gap-3">
+                <button
+                    onClick={() => setShowPartialForm(!showPartialForm)}
+                    className={cn(
+                        "w-full flex items-center justify-between p-4 sm:p-5 rounded-[20px] sm:rounded-[24px] border transition-all text-right",
+                        showPartialForm
+                            ? "bg-purple-50 border-purple-200 shadow-sm"
+                            : "bg-white border-gray-100 hover:border-purple-200 hover:bg-purple-50/30"
+                    )}
+                >
+                    <div className="flex items-center gap-2 sm:gap-3">
+                        <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", showPartialForm ? "bg-purple-100" : "bg-gray-50")}>
+                            <BookOpen size={18} className={showPartialForm ? "text-purple-600" : "text-gray-400"} />
+                        </div>
+                        <div className="text-right">
+                            <span className="font-black text-xs sm:text-sm block text-gray-900">تسجيل اختبار جزئي</span>
+                            <span className="text-[9px] sm:text-[10px] text-gray-400 font-bold">اختبار على عدد محاضرات محددة</span>
+                        </div>
+                    </div>
+                    <div className={cn("w-8 h-8 rounded-xl flex items-center justify-center transition-transform", showPartialForm && "rotate-45", showPartialForm ? "bg-purple-200" : "bg-gray-100")}>
+                        <Plus size={16} className={showPartialForm ? "text-purple-700" : "text-gray-500"} />
+                    </div>
+                </button>
+            )}
+
+            {/* محتوى اختبار جزئي */}
+            {canEdit && !isCompleted && showPartialForm && (
+                <div className="bg-gray-50 p-4 sm:p-5 rounded-[20px] sm:rounded-[24px] border border-gray-100 space-y-3 sm:space-y-4">
+                    <div className="grid grid-cols-2 gap-2 sm:gap-3">
                         <div>
-                            <label className="text-[10px] font-bold text-gray-500 mb-1 block">عدد المحاضرات المختبرة</label>
+                            <label className="text-[10px] font-bold text-gray-500 mb-1 block">عدد المحاضرات</label>
                             <input
                                 type="number" min={1} max={remaining || 1}
                                 value={lecturesTested}
                                 onChange={e => setLecturesTested(Math.max(1, parseInt(e.target.value) || 1))}
-                                className="w-full h-11 rounded-xl text-xs font-bold px-4 border-gray-100"
+                                className="w-full h-10 sm:h-11 rounded-xl text-xs font-bold px-3 sm:px-4 border-gray-100 bg-white"
                             />
                         </div>
                         <div>
                             <label className="text-[10px] font-bold text-gray-500 mb-1 block">مكان الاختبار</label>
                             <select value={partialLocation} onChange={e => setPartialLocation(e.target.value)}
-                                className="w-full h-11 rounded-xl text-xs font-bold px-4 border-gray-100">
+                                className="w-full h-10 sm:h-11 rounded-xl text-xs font-bold px-3 sm:px-4 border-gray-100 bg-white">
                                 <option value="حضوري">حضوري</option>
                                 <option value="أون لاين">أون لاين</option>
                             </select>
                         </div>
                     </div>
-                    <div className="flex items-center gap-2 text-[11px] text-gray-500 font-bold bg-white rounded-xl px-3 py-2 border border-gray-100">
-                        <User size={14} />
+                    <div className="flex items-center gap-2 text-[10px] sm:text-[11px] text-gray-500 font-bold bg-white rounded-xl px-3 py-2 border border-gray-100">
+                        <User size={13} />
                         المختبر: {user?.displayName || (user?.role === 'teacher' ? 'مدرس' : 'مدير')}
                     </div>
-                    <Button onClick={handleAddPartial} className="w-full bg-purple-600 hover:bg-purple-700">
+                    <Button onClick={handleAddPartial} className="w-full bg-purple-600 hover:bg-purple-700 text-sm sm:text-base">
                         تسجيل الاختبار
                     </Button>
                 </div>
             )}
 
-            {/* إكمال الدورة - يظهر فقط بعد إنهاء جميع المحاضرات */}
+            {/* أيقونة إكمال الدورة */}
             {canEdit && !isCompleted && remaining === 0 && totalLectures > 0 && (
-                <div className="bg-gradient-to-l from-amber-50 to-yellow-50 p-5 rounded-[24px] border border-amber-100 space-y-4">
-                    <h4 className="font-bold text-sm flex items-center gap-2">
-                        <GraduationCap size={16} className="text-amber-600" />
-                        الاختبار النهائي - إكمال الدورة
-                    </h4>
+                <button
+                    onClick={() => setShowFinalForm(!showFinalForm)}
+                    className={cn(
+                        "w-full flex items-center justify-between p-4 sm:p-5 rounded-[20px] sm:rounded-[24px] border transition-all text-right",
+                        showFinalForm
+                            ? "bg-amber-50 border-amber-200 shadow-sm"
+                            : "bg-white border-gray-100 hover:border-amber-200 hover:bg-amber-50/30"
+                    )}
+                >
+                    <div className="flex items-center gap-2 sm:gap-3">
+                        <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", showFinalForm ? "bg-amber-100" : "bg-gray-50")}>
+                            <GraduationCap size={18} className={showFinalForm ? "text-amber-600" : "text-gray-400"} />
+                        </div>
+                        <div className="text-right">
+                            <span className="font-black text-xs sm:text-sm block text-gray-900">الاختبار النهائي - إكمال الدورة</span>
+                            <span className="text-[9px] sm:text-[10px] text-gray-400 font-bold">تم اختبار جميع المحاضرات</span>
+                        </div>
+                    </div>
+                    <div className={cn("w-8 h-8 rounded-xl flex items-center justify-center transition-transform", showFinalForm && "rotate-45", showFinalForm ? "bg-amber-200" : "bg-gray-100")}>
+                        <Plus size={16} className={showFinalForm ? "text-amber-700" : "text-gray-500"} />
+                    </div>
+                </button>
+            )}
+
+            {/* محتوى إكمال الدورة */}
+            {canEdit && !isCompleted && showFinalForm && remaining === 0 && totalLectures > 0 && (
+                <div className="bg-gradient-to-l from-amber-50 to-yellow-50 p-4 sm:p-5 rounded-[20px] sm:rounded-[24px] border border-amber-100 space-y-3 sm:space-y-4">
                     <p className="text-[10px] text-gray-500 font-bold">
-                        تم اختبار جميع المحاضرات. سجل الاختبار النهائي لإكمال الدورة مع التقدير العام واسم الممتحن.
+                        سجل الاختبار النهائي لإكمال الدورة مع التقدير العام واسم الممتحن.
                     </p>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-2 gap-2 sm:gap-3">
                         <div>
                             <label className="text-[10px] font-bold text-gray-500 mb-1 block">التقدير العام</label>
                             <select value={finalGrade} onChange={e => setFinalGrade(e.target.value)}
-                                className="w-full h-11 rounded-xl text-xs font-bold px-4 border-gray-100 bg-white">
+                                className="w-full h-10 sm:h-11 rounded-xl text-xs font-bold px-3 sm:px-4 border-gray-100 bg-white">
                                 <option value="جيد">جيد</option>
                                 <option value="جيد جداً">جيد جداً</option>
                                 <option value="ممتاز">ممتاز</option>
@@ -225,25 +271,25 @@ export default function ExamsTab({ student, records }: any) {
                         <div>
                             <label className="text-[10px] font-bold text-gray-500 mb-1 block">مكان الاختبار</label>
                             <select value={finalLocation} onChange={e => setFinalLocation(e.target.value)}
-                                className="w-full h-11 rounded-xl text-xs font-bold px-4 border-gray-100 bg-white">
+                                className="w-full h-10 sm:h-11 rounded-xl text-xs font-bold px-3 sm:px-4 border-gray-100 bg-white">
                                 <option value="حضوري">حضوري</option>
                                 <option value="أون لاين">أون لاين</option>
                             </select>
                         </div>
                     </div>
-                    <div className="flex items-center gap-2 text-[11px] text-gray-500 font-bold bg-white rounded-xl px-3 py-2 border border-gray-100">
-                        <User size={14} />
+                    <div className="flex items-center gap-2 text-[10px] sm:text-[11px] text-gray-500 font-bold bg-white rounded-xl px-3 py-2 border border-gray-100">
+                        <User size={13} />
                         الممتحن: {user?.displayName || (user?.role === 'teacher' ? 'مدرس' : 'مدير')}
                     </div>
                     <button
                         onClick={handleCompleteCourse}
                         disabled={submitting}
-                        className="w-full h-12 bg-gradient-to-l from-emerald-500 to-teal-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 transition-all active:scale-95 flex items-center justify-center gap-2"
+                        className="w-full h-10 sm:h-12 bg-gradient-to-l from-emerald-500 to-teal-600 text-white rounded-xl font-bold text-xs sm:text-sm shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 transition-all active:scale-95 flex items-center justify-center gap-2"
                     >
                         {submitting ? (
                             <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
                         ) : (
-                            <><GraduationCap size={16} /> إكمال الدورة</>
+                            <><GraduationCap size={15} /> إكمال الدورة</>
                         )}
                     </button>
                 </div>
@@ -251,21 +297,21 @@ export default function ExamsTab({ student, records }: any) {
 
             {/* إلغاء الإكمال */}
             {canEdit && isCompleted && (
-                <div className="bg-green-50 p-5 rounded-[24px] border border-green-100 space-y-3">
+                <div className="bg-green-50 p-4 sm:p-5 rounded-[20px] sm:rounded-[24px] border border-green-100 space-y-3">
                     <div className="flex items-center justify-between">
-                        <h4 className="font-bold text-sm flex items-center gap-2 text-green-700">
-                            <CheckCircle size={16} />
+                        <h4 className="font-bold text-xs sm:text-sm flex items-center gap-2 text-green-700">
+                            <CheckCircle size={15} />
                             تم إكمال الدورة
                         </h4>
                         <button
                             onClick={handleUndoComplete}
                             disabled={submitting}
-                            className="h-9 px-4 bg-red-50 text-red-600 rounded-xl font-black text-[10px] border border-red-100 hover:bg-red-500 hover:text-white transition-all active:scale-95 flex items-center gap-1"
+                            className="h-8 sm:h-9 px-3 sm:px-4 bg-red-50 text-red-600 rounded-xl font-black text-[9px] sm:text-[10px] border border-red-100 hover:bg-red-500 hover:text-white transition-all active:scale-95 flex items-center gap-1"
                         >
-                            <X size={14} /> تراجع
+                            <X size={12} /> تراجع
                         </button>
                     </div>
-                    <p className="text-xs text-green-600 font-bold">
+                    <p className="text-[11px] sm:text-xs text-green-600 font-bold">
                         التقدير: {student.courseFinalGrade || finalGrade}
                         {completionExam?.recordedBy && ` • الممتحن: ${completionExam.recordedBy}`}
                         {student.courseCompletedAt && ` • ${new Date(student.courseCompletedAt).toLocaleDateString('ar-EG')}`}
@@ -274,9 +320,9 @@ export default function ExamsTab({ student, records }: any) {
             )}
 
             {/* قائمة الاختبارات */}
-            <div className="space-y-3">
-                <h4 className="font-bold text-sm text-gray-500 flex items-center gap-1.5">
-                    <BarChart3 size={14} />
+            <div className="space-y-2 sm:space-y-3">
+                <h4 className="font-bold text-xs sm:text-sm text-gray-500 flex items-center gap-1.5">
+                    <BarChart3 size={13} />
                     سجل الاختبارات
                 </h4>
 
@@ -287,51 +333,51 @@ export default function ExamsTab({ student, records }: any) {
                         const isCompletion = exam.type === 'إكمال دورة';
                         return (
                             <div key={exam.id} className={cn(
-                                "p-4 rounded-2xl border shadow-sm",
+                                "p-3 sm:p-4 rounded-2xl border shadow-sm",
                                 isCompletion
                                     ? "bg-gradient-to-l from-amber-50 to-yellow-50 border-amber-100"
                                     : "bg-white border-gray-100"
                             )}>
                                 <div className="flex items-center justify-between mb-2">
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-1.5">
                                         {isCompletion ? (
-                                            <GraduationCap size={14} className="text-amber-600" />
+                                            <GraduationCap size={13} className="text-amber-600" />
                                         ) : (
-                                            <BookOpen size={14} className="text-purple-500" />
+                                            <BookOpen size={13} className="text-purple-500" />
                                         )}
-                                        <span className="font-black text-gray-900 text-sm">
+                                        <span className="font-black text-gray-900 text-xs sm:text-sm">
                                             {isCompletion ? 'إكمال الدورة' : 'اختبار جزئي'}
                                         </span>
                                     </div>
                                     <div className="flex items-center gap-1">
                                         {exam.grade && (
-                                            <span className={cn("text-[10px] font-black px-2 py-0.5 rounded-lg border", courseGradeColor(exam.grade))}>
+                                            <span className={cn("text-[9px] sm:text-[10px] font-black px-1.5 sm:px-2 py-0.5 rounded-lg border", courseGradeColor(exam.grade))}>
                                                 {exam.grade}
                                             </span>
                                         )}
                                         {user?.role === 'director' && (
                                             <button onClick={() => deleteExam.mutate(exam.id)}
-                                                className="w-6 h-6 text-gray-300 hover:text-red-500 flex items-center justify-center rounded-lg hover:bg-red-50 transition-colors" title="حذف">
-                                                <Trash2 size={12} />
+                                                className="w-5 h-5 sm:w-6 sm:h-6 text-gray-300 hover:text-red-500 flex items-center justify-center rounded-lg hover:bg-red-50 transition-colors" title="حذف">
+                                                <Trash2 size={11} />
                                             </button>
                                         )}
                                     </div>
                                 </div>
-                                <div className="flex flex-wrap gap-3 text-[10px] text-gray-500 font-bold">
+                                <div className="flex flex-wrap gap-x-3 gap-y-1 text-[9px] sm:text-[10px] text-gray-500 font-bold">
                                     {exam.lecturesTested > 0 && (
-                                        <span className="flex items-center gap-1"><BarChart3 size={12} />{exam.lecturesTested} محاضرة</span>
+                                        <span className="flex items-center gap-1"><BarChart3 size={11} />{exam.lecturesTested} محاضرة</span>
                                     )}
-                                    <span className="flex items-center gap-1"><MapPin size={12} />{exam.examLocation || 'حضوري'}</span>
-                                    <span className="flex items-center gap-1"><User size={12} />{exam.recordedBy || 'المدير'}</span>
-                                    <span className="text-gray-300">|</span>
-                                    <span>{exam.date}</span>
+                                    <span className="flex items-center gap-1"><MapPin size={11} />{exam.examLocation || 'حضوري'}</span>
+                                    <span className="flex items-center gap-1"><User size={11} />{exam.recordedBy || 'المدير'}</span>
+                                    <span className="text-gray-300 hidden sm:inline">|</span>
+                                    <span className="sm:mr-0 mr-auto">{exam.date}</span>
                                 </div>
                             </div>
                         );
                     })}
 
                 {(!exams || exams.filter((e: any) => e.courseId).length === 0) && (
-                    <div className="text-center py-10 text-gray-400 text-xs font-bold">لا توجد اختبارات مسجلة</div>
+                    <div className="text-center py-8 sm:py-10 text-gray-400 text-xs font-bold">لا توجد اختبارات مسجلة</div>
                 )}
             </div>
         </div>

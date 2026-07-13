@@ -67,6 +67,20 @@ export default function StudentList({ groupId, customTitle }: StudentListProps) 
     const { data: teachers } = useTeachers();
     const { data: courses = [] } = useCourses();
 
+    const activeStudentIds = useMemo(() => {
+        if (!students) return [];
+        return students.filter(s => s.status === 'active').map(s => s.id);
+    }, [students]);
+
+    const { data: listensSummary = {} } = useQuery({
+        queryKey: ['listens-summary', activeStudentIds],
+        queryFn: async () => {
+            const { getListensSummaryByStudent } = await import('../services/recordsService');
+            return getListensSummaryByStudent(activeStudentIds);
+        },
+        enabled: activeStudentIds.length > 0,
+    });
+
     const courseProgressMap = useMemo(() => {
         if (!students || !groups || !courses) return {};
         const map: Record<string, { courseName: string; progress: number; totalCompleted: number; totalRequired: number }> = {};
@@ -74,16 +88,23 @@ export default function StudentList({ groupId, customTitle }: StudentListProps) 
             const group = groups.find((g: any) => g.id === s.groupId);
             const course = courses.find((c: any) => c.id === group?.courseId);
             if (course) {
+                const totalRequired = course.lecturesCount || 0;
+                const totalCompleted = listensSummary[s.id] || 0;
+                const progress = s.courseCompletedAt
+                    ? 100
+                    : totalRequired > 0
+                        ? Math.min(Math.round((totalCompleted / totalRequired) * 100), 100)
+                        : 0;
                 map[s.id] = {
                     courseName: course.name,
-                    progress: s.courseCompletedAt ? 100 : 0,
-                    totalCompleted: 0,
-                    totalRequired: course.lecturesCount || 0,
+                    progress,
+                    totalCompleted,
+                    totalRequired,
                 };
             }
         });
         return map;
-    }, [students, groups, courses]);
+    }, [students, groups, courses, listensSummary]);
 
     const myGroups = useMemo(() => {
         if (!groups) return [];
