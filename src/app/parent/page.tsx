@@ -280,20 +280,20 @@ function StudentCard({ kid, groups, courses: allCourses, teachers, onSelect, onL
     kid: any, groups: any[], courses: any[], teachers: any[], onSelect: () => void, onLeaveRequest: () => void
 }) {
     const { attendance, exams, fees, listens } = useStudentRecords(kid.id);
-    const group = groups.find(g => g.id === (kid.groupId ?? kid.groupIds?.[0] ?? null));
-    const teacher = teachers.find(t => t.id === group?.teacherId);
-    const course = allCourses.find((c: any) => c.id === group?.courseId);
+
+    const kidGroupIds: string[] = kid.groupIds?.length
+        ? kid.groupIds
+        : (kid.groupId ? [kid.groupId] : []);
+    const kidGroups = kidGroupIds.map(gid => groups.find((g: any) => g.id === gid)).filter(Boolean);
+    const kidCourses = kidGroups.map((g: any) => allCourses.find((c: any) => c.id === g?.courseId)).filter(Boolean);
+    const kidTeachers = kidGroups.map((g: any) => teachers.find((t: any) => t.id === g?.teacherId)).filter(Boolean);
+    const uniqueTeachers = [...new Map(kidTeachers.map((t: any) => [t?.id, t])).values()].filter(Boolean);
 
     const presentCount = attendance.filter((a: any) => a.status === 'present').length;
     const totalAttendance = attendance.length;
     const attendanceRate = totalAttendance > 0 ? Math.round((presentCount / totalAttendance) * 100) : 0;
     const totalListened = listens?.reduce((s: any, l: any) => s + (l.lecturesCount || 0), 0) || 0;
-    const totalLectures = course?.lecturesCount || 0;
-    const progress = totalLectures > 0 ? Math.min(Math.round((totalListened / totalLectures) * 100), 100) : 0;
     const courseExams = exams.filter((e: any) => e.type !== 'quran');
-    const avgGrade = courseExams.length > 0
-        ? Math.round(courseExams.reduce((s: any, e: any) => s + Number(e.grade || 0), 0) / courseExams.length)
-        : 0;
 
     return (
         <div onClick={onSelect}
@@ -317,63 +317,73 @@ function StudentCard({ kid, groups, courses: allCourses, teachers, onSelect, onL
                     <div className="min-w-0 flex-1">
                         <h3 className="font-black text-gray-900 text-lg">{kid.fullName}</h3>
                         <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-100">
-                                <span className="w-1 h-1 rounded-full bg-emerald-500" />
-                                {group?.name || "بدون مجموعة"}
-                            </span>
-                            {teacher && (
-                                <span className="text-[10px] text-gray-400 font-bold">أ/ {teacher.fullName}</span>
+                            {kidGroups.map((g: any) => (
+                                <span key={g.id} className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-100">
+                                    <span className="w-1 h-1 rounded-full bg-emerald-500" />
+                                    {g.name}
+                                </span>
+                            ))}
+                            {kidGroups.length === 0 && (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-gray-400 bg-gray-50 px-2.5 py-0.5 rounded-full border border-gray-100">
+                                    بدون مجموعة
+                                </span>
                             )}
+                            {uniqueTeachers.map((t: any) => (
+                                <span key={t.id} className="text-[10px] text-gray-400 font-bold">أ/ {t.fullName}</span>
+                            ))}
                         </div>
                     </div>
                 </div>
 
-                {/* Course Card */}
-                {course ? (
-                    <div className="bg-gradient-to-l from-emerald-50 to-teal-50 rounded-2xl p-4 border border-emerald-100/50 mb-4">
-                        <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center gap-2">
-                                <BookOpen size={16} className="text-emerald-600" />
-                                <span className="font-black text-gray-800 text-sm">{course.name}</span>
+                {/* Courses */}
+                {kidCourses.length > 0 ? kidCourses.map((course: any, idx: number) => {
+                    const totalLectures = course?.lecturesCount || 0;
+                    const progress = totalLectures > 0 ? Math.min(Math.round((totalListened / totalLectures) * 100), 100) : 0;
+                    return (
+                        <div key={course.id} className={`bg-gradient-to-l from-emerald-50 to-teal-50 rounded-2xl p-4 border border-emerald-100/50 ${idx < kidCourses.length - 1 ? 'mb-3' : 'mb-4'}`}>
+                            <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center gap-2">
+                                    <BookOpen size={16} className="text-emerald-600" />
+                                    <span className="font-black text-gray-800 text-sm">{course.name}</span>
+                                </div>
+                                <span className={cn(
+                                    "px-2.5 py-0.5 rounded-full text-[9px] font-black",
+                                    progress >= 100 ? "bg-emerald-500 text-white" : "bg-emerald-100 text-emerald-700"
+                                )}>
+                                    {progress >= 100 ? 'مكتملة' : `${progress}%`}
+                                </span>
                             </div>
-                            <span className={cn(
-                                "px-2.5 py-0.5 rounded-full text-[9px] font-black",
-                                progress >= 100 ? "bg-emerald-500 text-white" : "bg-emerald-100 text-emerald-700"
-                            )}>
-                                {progress >= 100 ? 'مكتملة' : `${progress}%`}
-                            </span>
-                        </div>
-                        <div className="w-full h-2 bg-emerald-200/50 rounded-full overflow-hidden">
-                            <div className="h-full bg-gradient-to-l from-emerald-500 to-teal-600 rounded-full transition-all"
-                                style={{ width: `${progress}%` }} />
-                        </div>
-                        <div className="flex items-center justify-between mt-2 text-[9px] text-gray-400 font-bold">
-                            <span>المستمع: {totalListened}</span>
-                            <span>المحاضرات: {totalLectures}</span>
-                        </div>
-                        {/* روابط الدورة والكتاب */}
-                        {(course?.link || course?.bookLink) && (
-                            <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-emerald-200/50">
-                                {course.link && (
-                                    <a href={course.link} target="_blank" rel="noopener noreferrer"
-                                        onClick={(e) => e.stopPropagation()}
-                                        className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-2xl text-sm font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-200">
-                                        <ExternalLink size={18} />
-                                        رابط الدورة
-                                    </a>
-                                )}
-                                {course.bookLink && (
-                                    <a href={course.bookLink} target="_blank" rel="noopener noreferrer"
-                                        onClick={(e) => e.stopPropagation()}
-                                        className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-amber-500 text-white rounded-2xl text-sm font-bold hover:bg-amber-600 transition-all shadow-lg shadow-amber-200">
-                                        <Book size={18} />
-                                        رابط الكتاب
-                                    </a>
-                                )}
+                            <div className="w-full h-2 bg-emerald-200/50 rounded-full overflow-hidden">
+                                <div className="h-full bg-gradient-to-l from-emerald-500 to-teal-600 rounded-full transition-all"
+                                    style={{ width: `${progress}%` }} />
                             </div>
-                        )}
-                    </div>
-                ) : (
+                            <div className="flex items-center justify-between mt-2 text-[9px] text-gray-400 font-bold">
+                                <span>المستمع: {totalListened}</span>
+                                <span>المحاضرات: {totalLectures}</span>
+                            </div>
+                            {(course?.link || course?.bookLink) && (
+                                <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-emerald-200/50">
+                                    {course.link && (
+                                        <a href={course.link} target="_blank" rel="noopener noreferrer"
+                                            onClick={(e) => e.stopPropagation()}
+                                            className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-2xl text-sm font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-200">
+                                            <ExternalLink size={18} />
+                                            رابط الدورة
+                                        </a>
+                                    )}
+                                    {course.bookLink && (
+                                        <a href={course.bookLink} target="_blank" rel="noopener noreferrer"
+                                            onClick={(e) => e.stopPropagation()}
+                                            className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-amber-500 text-white rounded-2xl text-sm font-bold hover:bg-amber-600 transition-all shadow-lg shadow-amber-200">
+                                            <Book size={18} />
+                                            رابط الكتاب
+                                        </a>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    );
+                }) : (
                     <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100 mb-4 text-center">
                         <p className="text-xs font-bold text-gray-400 mb-2">غير مسجل في دورة</p>
                         <button onClick={(e) => { e.stopPropagation(); window.location.href = '/parent/courses'; }}
@@ -403,7 +413,10 @@ function StudentCard({ kid, groups, courses: allCourses, teachers, onSelect, onL
                     </div>
                     <div className="bg-gray-50/80 rounded-2xl p-3 text-center border border-gray-100">
                         <BarChart3 size={14} className="mx-auto text-purple-500 mb-1" />
-                        <p className="text-base font-black text-gray-900">{progress}%</p>
+                        <p className="text-base font-black text-gray-900">{Math.max(...kidCourses.map((c: any) => {
+                            const total = c?.lecturesCount || 0;
+                            return total > 0 ? Math.min(Math.round((totalListened / total) * 100), 100) : 0;
+                        }), 0)}%</p>
                         <p className="text-[7px] text-gray-400 font-bold">تقدم</p>
                     </div>
                 </div>

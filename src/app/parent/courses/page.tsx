@@ -67,9 +67,15 @@ export default function ParentCoursesPage() {
         refetchInterval: 10000,
     });
 
-    const getKidCourse = (kid: any) => {
-        const group = groups?.find((g: any) => g.id === (kid.groupId ?? kid.groupIds?.[0] ?? null));
-        return courses?.find((c: any) => c.id === group?.courseId);
+    const getKidCourses = (kid: any) => {
+        const kidGroupIds: string[] = kid.groupIds?.length
+            ? kid.groupIds
+            : (kid.groupId ? [kid.groupId] : []);
+        return kidGroupIds
+            .map(gid => groups?.find((g: any) => g.id === gid))
+            .filter(Boolean)
+            .map((g: any) => courses?.find((c: any) => c.id === g?.courseId))
+            .filter(Boolean);
     };
 
     const getJoinRequestStatus = (courseId: string) => {
@@ -117,7 +123,7 @@ export default function ParentCoursesPage() {
         );
     }
 
-    const kidCourse = selectedKid ? getKidCourse(selectedKid) : null;
+    const kidCoursesArr = selectedKid ? getKidCourses(selectedKid) : [];
 
     return (
         <div className="min-h-screen bg-gray-50 pb-28" dir="rtl">
@@ -174,23 +180,25 @@ export default function ParentCoursesPage() {
                             <div>
                                 <h2 className="font-black text-gray-900">{selectedKid.fullName}</h2>
                                 <p className="text-[10px] text-gray-500 font-bold">
-                                    {kidCourse
-                                        ? `مسجل في: ${kidCourse.name}`
+                                    {kidCoursesArr.length > 0
+                                        ? `مسجل في: ${kidCoursesArr.map((c: any) => c.name).join('، ')}`
                                         : selectedKid.courseRegisteredAt
                                             ? 'تم التسجيل في دورة'
                                             : 'غير مسجل في أي دورة'}
                                 </p>
                             </div>
                         </div>
-                        {kidCourse && (
-                            <div className="flex items-center gap-2">
-                                <span className="bg-emerald-500 text-white px-3 py-1 rounded-full text-[10px] font-black flex items-center gap-1">
-                                    <CheckCircle size={11} />
-                                    {kidCourse.name}
-                                </span>
+                        {kidCoursesArr.length > 0 && (
+                            <div className="flex items-center gap-2 flex-wrap">
+                                {kidCoursesArr.map((c: any) => (
+                                    <span key={c.id} className="bg-emerald-500 text-white px-3 py-1 rounded-full text-[10px] font-black flex items-center gap-1">
+                                        <CheckCircle size={11} />
+                                        {c.name}
+                                    </span>
+                                ))}
                             </div>
                         )}
-                        {!kidCourse && selectedKid.courseRegisteredAt && (
+                        {kidCoursesArr.length === 0 && selectedKid.courseRegisteredAt && (
                             <div className="flex items-center gap-2">
                                 <span className="bg-amber-50 text-amber-600 px-3 py-1 rounded-full text-[10px] font-black border border-amber-100">
                                     في انتظار التخصيص
@@ -231,7 +239,7 @@ export default function ParentCoursesPage() {
                                 : platform === 'تليجرام'
                                     ? 'bg-blue-50 text-blue-600 border-blue-100'
                                     : 'bg-gray-50 text-gray-600 border-gray-100';
-                            const isRegistered = kidCourse?.id === course.id;
+                            const isRegistered = kidCoursesArr.some((c: any) => c.id === course.id);
                             const requestStatus = getJoinRequestStatus(course.id);
 
                             return (
