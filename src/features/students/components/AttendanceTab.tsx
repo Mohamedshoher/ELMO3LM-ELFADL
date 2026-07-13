@@ -102,12 +102,11 @@ export default function AttendanceTab({ student, records }: any) {
                                     className={cn(
                                     "aspect-square rounded-xl flex flex-col items-center justify-center border transition-all text-[11px] sm:text-sm font-bold shadow-sm",
                                     isFuture ? "bg-gray-50/50 text-gray-200 pointer-events-none" :
-                                    status === 'absent' ? "bg-red-50 border-red-100 text-red-600" :
-                                    status === 'present' ? "bg-green-50 border-green-100 text-green-600" : "bg-white text-gray-400",
+                                    status === 'present' ? "bg-green-50 border-green-100 text-green-600" : "bg-red-50 border-red-100 text-red-600",
                                     !isFuture && canEditAttendance && "cursor-pointer hover:border-blue-300"
                                 )}>
                                     <span>{day}</span>
-                                    {!isFuture && (status === 'absent' ? <XCircle size={11} /> : status === 'present' ? <CheckCircle2 size={11} /> : null)}
+                                    {!isFuture && (status === 'present' ? <CheckCircle2 size={11} /> : <XCircle size={11} />)}
                                 </div>
                             );
                         })}

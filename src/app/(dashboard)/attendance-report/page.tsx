@@ -1,6 +1,6 @@
 "use client";
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Users, Bell } from 'lucide-react';
 
 // المكونات الفرعية
@@ -20,6 +20,7 @@ const StudentDetailModal = dynamic(() => import('@/features/students/components/
 const EditStudentModal = dynamic(() => import('@/features/students/components/EditStudentModal'), { ssr: false });
 
 export default function AttendanceReportPage() {
+    const queryClient = useQueryClient();
     const { data: students, archiveStudent } = useStudents();
     const { data: groups } = useGroups();
     const { user } = useAuthStore();
@@ -157,7 +158,9 @@ export default function AttendanceReportPage() {
 
             return { attendanceMap: map };
         },
-        enabled: !!students && (user?.role === 'director' || relevantStudentIds.length > 0)
+        enabled: !!students && (user?.role === 'director' || relevantStudentIds.length > 0),
+        refetchInterval: 5000,
+        refetchOnWindowFocus: true,
     });
 
     // 2. معالجة البيانات وحساب الغياب المتصل والكلي
@@ -254,8 +257,8 @@ export default function AttendanceReportPage() {
 
             if (!matchesSearch || !matchesGroup) return false;
 
-            // إذا لم يتم تحديد فلاتر أرقام، اظهر الغائبين اليوم فقط
-            if (!cL && !tL) return s.currentStatus === 'absent';
+            // إذا لم يتم تحديد فلاتر أرقام، اظهر الغائبين (وغير المسجلين) اليوم فقط
+            if (!cL && !tL) return s.currentStatus === 'absent' || s.currentStatus === 'not_recorded';
 
             let pass = false;
             if (cL > 0 && tL > 0) {
@@ -278,7 +281,7 @@ export default function AttendanceReportPage() {
             displayStudents: filtered,
             chartData: {
                 present: getGroupStats(processedStudents.filter(s => s.currentStatus === 'present')),
-                absent: getGroupStats(processedStudents.filter(s => s.currentStatus === 'absent'))
+                absent: getGroupStats(processedStudents.filter(s => s.currentStatus === 'absent' || s.currentStatus === 'not_recorded'))
             }
         };
     }, [processedStudents, groupId, searchQuery, contLimit, totalLimit]);
@@ -286,7 +289,7 @@ export default function AttendanceReportPage() {
     // حساب إحصائيات اليوم
     const dailyStats = useMemo(() => {
         const p = processedStudents.filter(s => s.currentStatus === 'present').length;
-        const a = processedStudents.filter(s => s.currentStatus === 'absent').length;
+        const a = processedStudents.filter(s => s.currentStatus === 'absent' || s.currentStatus === 'not_recorded').length;
         return { p, a };
     }, [processedStudents]);
 
@@ -391,7 +394,10 @@ export default function AttendanceReportPage() {
             <StudentDetailModal 
                 student={selectedStudent} 
                 isOpen={!!selectedStudent} 
-                onClose={() => setSelectedStudent(null)} 
+                onClose={() => {
+                    setSelectedStudent(null);
+                    queryClient.invalidateQueries({ queryKey: ['attendance-report-v7'] });
+                }} 
                 initialTab="attendance" 
                 onEdit={(s: any) => {
                     setSelectedStudent(null);

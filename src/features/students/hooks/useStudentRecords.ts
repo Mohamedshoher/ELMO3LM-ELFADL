@@ -66,7 +66,7 @@ export const useStudentRecords = (studentId: string) => {
         onSettled: () => {
             queryClient.invalidateQueries({ queryKey: ['attendance', studentId] });
             queryClient.invalidateQueries({ queryKey: ['today-attendance'] });
-            queryClient.invalidateQueries({ queryKey: ['report-data'] });
+            queryClient.invalidateQueries({ queryKey: ['attendance-report-v7'] });
         }
     });
 
@@ -197,6 +197,7 @@ export const useStudentRecords = (studentId: string) => {
         onSettled: () => {
             queryClient.invalidateQueries({ queryKey: ['listens', studentId] });
             queryClient.invalidateQueries({ queryKey: ['all-listens'] });
+            queryClient.invalidateQueries({ queryKey: ['attendance-report-v7'] });
         }
     });
 

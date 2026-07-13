@@ -22,14 +22,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: stuErr.message }, { status: 500 });
         }
 
-        // 2. تصفية الطلاب الذين لديهم هذا اليوم في مواعيدهم
-        const studentsWithAppointment = (students || []).filter((s: any) => {
-            if (!s.appointment) return false;
-            const days = s.appointment.split(',').map((p: string) => p.trim().split(':')[0].trim());
-            return days.includes(todayArabic);
-        });
-
-        // 3. جلب جميع متابعات (listens) اليوم
+        // 2. جلب جميع متابعات (listens) اليوم
         const { data: todayListens } = await supabase
             .from('student_listens')
             .select('student_id')
@@ -45,10 +38,10 @@ export async function POST(request: NextRequest) {
 
         const existingAttMap = new Map((existingAttendance || []).map((a: any) => [a.student_id, a]));
 
-        // 5. معالجة كل طالب
+        // 5. معالجة كل طالب (الافتراضي: غياب للجميع)
         const results: any[] = [];
 
-        for (const student of studentsWithAppointment) {
+        for (const student of students || []) {
             const hasListen = listenedStudentIds.has(student.id);
             const existing = existingAttMap.get(student.id);
 
@@ -171,7 +164,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({
             date: targetDate,
             dayName: todayArabic,
-            totalStudents: studentsWithAppointment.length,
+            totalStudents: students.length,
             results,
         });
     } catch (error: any) {

@@ -15,10 +15,18 @@ export default function ExamsTab({ student, records }: any) {
     const { data: groups } = useGroups();
     const { exams, addExam, deleteExam } = records;
 
-    const primaryGroupId = student.groupId ?? student.groupIds?.[0] ?? null;
-    const studentGroup = groups?.find((g: any) => g.id === primaryGroupId);
-    const studentCourseId = studentGroup?.courseId;
-    const studentCourse = courses?.find((c: any) => c.id === studentCourseId);
+    const studentGroupIds: string[] = student.groupIds?.length
+        ? student.groupIds
+        : (student.groupId ? [student.groupId] : []);
+
+    const studentCourses = studentGroupIds
+        .map(gid => groups?.find((g: any) => g.id === gid))
+        .filter(Boolean)
+        .map((g: any) => {
+            const course = courses?.find((c: any) => c.id === g?.courseId);
+            return course ? { group: g, course } : null;
+        })
+        .filter(Boolean);
 
     const canEdit = user?.role === 'director' || user?.role === 'teacher' || user?.role === 'supervisor';
     const isCompleted = !!student.courseCompletedAt;
@@ -27,6 +35,8 @@ export default function ExamsTab({ student, records }: any) {
     const [lecturesTested, setLecturesTested] = useState(1);
     const [partialLocation, setPartialLocation] = useState('حضوري');
     const [showPartialForm, setShowPartialForm] = useState(false);
+    const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
+    const [expandedCourseId, setExpandedCourseId] = useState<string | null>(null);
 
     // إكمال الدورة
     const [finalGrade, setFinalGrade] = useState('جيد');
@@ -34,16 +44,18 @@ export default function ExamsTab({ student, records }: any) {
     const [showFinalForm, setShowFinalForm] = useState(false);
     const [submitting, setSubmitting] = useState(false);
 
-    const partialExams = (exams || []).filter((e: any) => e.courseId && e.type !== 'إكمال دورة');
+    const partialCourseId = selectedCourseId || studentCourses[0]?.course?.id || null;
+    const partialCourse = studentCourses.find((sc: any) => sc.course.id === partialCourseId);
+    const partialExams = (exams || []).filter((e: any) => e.courseId === partialCourseId && e.type !== 'إكمال دورة');
     const completionExam = (exams || []).find((e: any) => e.courseId && e.type === 'إكمال دورة');
 
     const totalTested = partialExams.reduce((s: number, e: any) => s + (e.lecturesTested || 0), 0);
-    const totalLectures = studentCourse?.lecturesCount || 0;
+    const totalLectures = partialCourse?.course?.lecturesCount || 0;
     const progressPct = totalLectures > 0 ? Math.min(Math.round((totalTested / totalLectures) * 100), 100) : 0;
     const remaining = Math.max(0, totalLectures - totalTested);
 
     const handleAddPartial = () => {
-        if (!studentCourse) return alert('الطالب غير مسجل في دورة');
+        if (!partialCourse) return alert('يرجى اختيار الدورة أولاً');
         if (lecturesTested < 1) return alert('عدد المحاضرات يجب أن يكون 1 على الأقل');
         if (lecturesTested > remaining) return alert(`المتبقي فقط ${remaining} محاضرات`);
 
@@ -53,7 +65,7 @@ export default function ExamsTab({ student, records }: any) {
             type: 'اختبار جزئي',
             grade: '',
             date: new Date().toISOString().split('T')[0],
-            courseId: studentCourse.id,
+            courseId: partialCourseId,
             lecturesTested,
             examLocation: partialLocation,
             recordedBy: user?.displayName || user?.role || 'المدير',
@@ -67,7 +79,7 @@ export default function ExamsTab({ student, records }: any) {
     };
 
     const handleCompleteCourse = () => {
-        if (!studentCourse) return alert('الطالب غير مسجل في دورة');
+        if (!partialCourse) return alert('يرجى اختيار الدورة أولاً');
         if (isCompleted) return alert('تم إكمال الدورة مسبقاً');
         setSubmitting(true);
 
@@ -79,7 +91,7 @@ export default function ExamsTab({ student, records }: any) {
             type: 'إكمال دورة',
             grade: finalGrade,
             date: new Date().toISOString().split('T')[0],
-            courseId: studentCourse.id,
+            courseId: partialCourseId,
             lecturesTested: completionLectures,
             examLocation: finalLocation,
             recordedBy: user?.displayName || user?.role || 'المدير',
@@ -120,7 +132,12 @@ export default function ExamsTab({ student, records }: any) {
         return 'bg-amber-50 text-amber-600 border-amber-100/50';
     };
 
-    if (!studentCourse) {
+    const findCourseName = (courseId: string) => {
+        const found = studentCourses.find((sc: any) => sc.course.id === courseId);
+        return found ? found.course.name : null;
+    };
+
+    if (studentCourses.length === 0) {
         return (
             <div className="text-center py-16">
                 <div className="w-20 h-20 bg-gray-50 rounded-3xl flex items-center justify-center mx-auto mb-4">
@@ -164,6 +181,17 @@ export default function ExamsTab({ student, records }: any) {
             {canEdit && !isCompleted && showPartialForm && (
                 <div className="bg-gray-50 p-4 sm:p-5 rounded-[20px] sm:rounded-[24px] border border-gray-100 space-y-3 sm:space-y-4">
                     <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                        {studentCourses.length > 1 && (
+                            <div>
+                                <label className="text-[10px] font-bold text-gray-500 mb-1 block">الدورة</label>
+                                <select value={partialCourseId || ''} onChange={e => setSelectedCourseId(e.target.value)}
+                                    className="w-full h-10 sm:h-11 rounded-xl text-xs font-bold px-3 sm:px-4 border-gray-100 bg-white">
+                                    {studentCourses.map((sc: any) => (
+                                        <option key={sc.course.id} value={sc.course.id}>{sc.course.name} ({sc.group.name})</option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
                         <div>
                             <label className="text-[10px] font-bold text-gray-500 mb-1 block">عدد المحاضرات</label>
                             <input
@@ -261,39 +289,119 @@ export default function ExamsTab({ student, records }: any) {
                 </div>
             )}
 
-            {/* بطاقة الدورة */}
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 sm:p-5">
-                <div className="flex items-center gap-2 sm:gap-3 mb-4">
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-50 rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0">
-                        <BookOpen size={18} className="text-purple-600" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                        <h3 className="text-sm sm:text-base font-black text-gray-900 truncate">{studentCourse.name}</h3>
-                        <p className="text-[10px] sm:text-xs text-gray-500 font-bold">{studentCourse.lecturesCount} محاضرات</p>
-                    </div>
-                    <span className={cn(
-                        "px-2 sm:px-3 py-0.5 sm:py-1 rounded-lg sm:rounded-xl text-[9px] sm:text-xs font-bold flex items-center gap-1 shrink-0",
-                        isCompleted
-                            ? "bg-green-50 text-green-600 border border-green-100"
-                            : "bg-blue-50 text-blue-600 border border-blue-100"
-                    )}>
-                        {isCompleted ? <Award size={12} /> : <Clock size={12} />}
-                        {isCompleted ? 'مكتملة' : 'مستمرة'}
-                    </span>
-                </div>
+            {/* بطاقات الدورات */}
+            <div className="space-y-3">
+                {studentCourses.map(({ group, course }: any) => {
+                    const coursePartialExams = (exams || []).filter((e: any) => e.courseId === course.id && e.type !== 'إكمال دورة');
+                    const courseTotalTested = coursePartialExams.reduce((s: number, e: any) => s + (e.lecturesTested || 0), 0);
+                    const courseTotalLectures = course.lecturesCount || 0;
+                    const courseProgressPct = courseTotalLectures > 0 ? Math.min(Math.round((courseTotalTested / courseTotalLectures) * 100), 100) : 0;
+                    const isExpanded = expandedCourseId === course.id;
+                    const courseExams = (exams || []).filter((e: any) => e.courseId === course.id);
 
-                {/* شريط التقدم */}
-                <div className="mb-2">
-                    <div className="flex items-center justify-between mb-2">
-                        <span className="text-[10px] sm:text-xs font-bold text-gray-500">التقدم</span>
-                        <span className="text-[10px] sm:text-xs font-black text-gray-700">{totalTested} / {totalLectures}</span>
-                    </div>
-                    <div className="w-full h-2.5 sm:h-3 bg-gray-100 rounded-full overflow-hidden">
-                        <div className={cn("h-full rounded-full transition-all", progressPct >= 100 ? "bg-green-500" : "bg-purple-500")}
-                            style={{ width: `${progressPct}%` }} />
-                    </div>
-                    <p className="text-[9px] sm:text-[10px] text-gray-400 font-bold mt-1">{progressPct}%</p>
-                </div>
+                    return (
+                        <div key={course.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                            <button
+                                onClick={() => setExpandedCourseId(isExpanded ? null : course.id)}
+                                className="w-full text-right p-4 sm:p-5 hover:bg-gray-50/50 transition-colors"
+                            >
+                                <div className="flex items-center gap-2 sm:gap-3 mb-4">
+                                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-50 rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0">
+                                        <BookOpen size={18} className="text-purple-600" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <h3 className="text-sm sm:text-base font-black text-gray-900 truncate">{course.name}</h3>
+                                        <p className="text-[10px] sm:text-xs text-gray-500 font-bold">{course.lecturesCount} محاضرات • {group.name}</p>
+                                    </div>
+                                    <span className={cn(
+                                        "px-2 sm:px-3 py-0.5 sm:py-1 rounded-lg sm:rounded-xl text-[9px] sm:text-xs font-bold flex items-center gap-1 shrink-0",
+                                        isCompleted && completionExam?.courseId === course.id
+                                            ? "bg-green-50 text-green-600 border border-green-100"
+                                            : "bg-blue-50 text-blue-600 border border-blue-100"
+                                    )}>
+                                        {isCompleted && completionExam?.courseId === course.id ? <Award size={12} /> : <Clock size={12} />}
+                                        {isCompleted && completionExam?.courseId === course.id ? 'مكتملة' : 'مستمرة'}
+                                    </span>
+                                </div>
+
+                                {/* شريط التقدم */}
+                                <div className="mb-2">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="text-[10px] sm:text-xs font-bold text-gray-500">التقدم</span>
+                                        <span className="text-[10px] sm:text-xs font-black text-gray-700">{courseTotalTested} / {courseTotalLectures}</span>
+                                    </div>
+                                    <div className="w-full h-2.5 sm:h-3 bg-gray-100 rounded-full overflow-hidden">
+                                        <div className={cn("h-full rounded-full transition-all", courseProgressPct >= 100 ? "bg-green-500" : "bg-purple-500")}
+                                            style={{ width: `${courseProgressPct}%` }} />
+                                    </div>
+                                    <p className="text-[9px] sm:text-[10px] text-gray-400 font-bold mt-1">{courseProgressPct}%</p>
+                                </div>
+                            </button>
+
+                            {/* سجل اختبارات الدورة عند الضغط */}
+                            {isExpanded && (
+                                <div className="border-t border-gray-100 p-4 sm:p-5 space-y-2 sm:space-y-3">
+                                    <h4 className="font-bold text-xs sm:text-sm text-gray-500 flex items-center gap-1.5">
+                                        <BarChart3 size={13} />
+                                        سجل الاختبارات
+                                    </h4>
+                                    {courseExams.length === 0 ? (
+                                        <div className="text-center py-8 sm:py-10 text-gray-400 text-xs font-bold">لا توجد اختبارات لهذه الدورة</div>
+                                    ) : (
+                                        [...courseExams]
+                                            .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                                            .map((exam: any) => {
+                                                const isCompletion = exam.type === 'إكمال دورة';
+                                                return (
+                                                    <div key={exam.id} className={cn(
+                                                        "p-3 sm:p-4 rounded-2xl border shadow-sm",
+                                                        isCompletion
+                                                            ? "bg-gradient-to-l from-amber-50 to-yellow-50 border-amber-100"
+                                                            : "bg-white border-gray-100"
+                                                    )}>
+                                                        <div className="flex items-center justify-between mb-2">
+                                                            <div className="flex items-center gap-1.5">
+                                                                {isCompletion ? (
+                                                                    <GraduationCap size={13} className="text-amber-600" />
+                                                                ) : (
+                                                                    <BookOpen size={13} className="text-purple-500" />
+                                                                )}
+                                                                <span className="font-black text-gray-900 text-xs sm:text-sm">
+                                                                    {isCompletion ? 'إكمال الدورة' : 'اختبار جزئي'}
+                                                                </span>
+                                                            </div>
+                                                            <div className="flex items-center gap-1">
+                                                                {exam.grade && (
+                                                                    <span className={cn("text-[9px] sm:text-[10px] font-black px-1.5 sm:px-2 py-0.5 rounded-lg border", courseGradeColor(exam.grade))}>
+                                                                        {exam.grade}
+                                                                    </span>
+                                                                )}
+                                                                {user?.role === 'director' && (
+                                                                    <button onClick={() => deleteExam.mutate(exam.id)}
+                                                                        className="w-5 h-5 sm:w-6 sm:h-6 text-gray-300 hover:text-red-500 flex items-center justify-center rounded-lg hover:bg-red-50 transition-colors" title="حذف">
+                                                                        <Trash2 size={11} />
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex flex-wrap gap-x-3 gap-y-1 text-[9px] sm:text-[10px] text-gray-500 font-bold">
+                                                            {exam.lecturesTested > 0 && (
+                                                                <span className="flex items-center gap-1"><BarChart3 size={11} />{exam.lecturesTested} محاضرة</span>
+                                                            )}
+                                                            <span className="flex items-center gap-1"><MapPin size={11} />{exam.examLocation || 'حضوري'}</span>
+                                                            <span className="flex items-center gap-1"><User size={11} />{exam.recordedBy || 'المدير'}</span>
+                                                            <span className="text-gray-300 hidden sm:inline">|</span>
+                                                            <span className="sm:mr-0 mr-auto">{exam.date}</span>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    );
+                })}
             </div>
 
             {/* إلغاء الإكمال */}
@@ -315,72 +423,11 @@ export default function ExamsTab({ student, records }: any) {
                     <p className="text-[11px] sm:text-xs text-green-600 font-bold">
                         التقدير: {student.courseFinalGrade || finalGrade}
                         {completionExam?.recordedBy && ` • الممتحن: ${completionExam.recordedBy}`}
+                        {completionExam && findCourseName(completionExam.courseId) && ` • ${findCourseName(completionExam.courseId)}`}
                         {student.courseCompletedAt && ` • ${new Date(student.courseCompletedAt).toLocaleDateString('ar-EG')}`}
                     </p>
                 </div>
             )}
-
-            {/* قائمة الاختبارات */}
-            <div className="space-y-2 sm:space-y-3">
-                <h4 className="font-bold text-xs sm:text-sm text-gray-500 flex items-center gap-1.5">
-                    <BarChart3 size={13} />
-                    سجل الاختبارات
-                </h4>
-
-                {[...exams]
-                    .filter((e: any) => e.courseId)
-                    .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
-                    .map((exam: any) => {
-                        const isCompletion = exam.type === 'إكمال دورة';
-                        return (
-                            <div key={exam.id} className={cn(
-                                "p-3 sm:p-4 rounded-2xl border shadow-sm",
-                                isCompletion
-                                    ? "bg-gradient-to-l from-amber-50 to-yellow-50 border-amber-100"
-                                    : "bg-white border-gray-100"
-                            )}>
-                                <div className="flex items-center justify-between mb-2">
-                                    <div className="flex items-center gap-1.5">
-                                        {isCompletion ? (
-                                            <GraduationCap size={13} className="text-amber-600" />
-                                        ) : (
-                                            <BookOpen size={13} className="text-purple-500" />
-                                        )}
-                                        <span className="font-black text-gray-900 text-xs sm:text-sm">
-                                            {isCompletion ? 'إكمال الدورة' : 'اختبار جزئي'}
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center gap-1">
-                                        {exam.grade && (
-                                            <span className={cn("text-[9px] sm:text-[10px] font-black px-1.5 sm:px-2 py-0.5 rounded-lg border", courseGradeColor(exam.grade))}>
-                                                {exam.grade}
-                                            </span>
-                                        )}
-                                        {user?.role === 'director' && (
-                                            <button onClick={() => deleteExam.mutate(exam.id)}
-                                                className="w-5 h-5 sm:w-6 sm:h-6 text-gray-300 hover:text-red-500 flex items-center justify-center rounded-lg hover:bg-red-50 transition-colors" title="حذف">
-                                                <Trash2 size={11} />
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
-                                <div className="flex flex-wrap gap-x-3 gap-y-1 text-[9px] sm:text-[10px] text-gray-500 font-bold">
-                                    {exam.lecturesTested > 0 && (
-                                        <span className="flex items-center gap-1"><BarChart3 size={11} />{exam.lecturesTested} محاضرة</span>
-                                    )}
-                                    <span className="flex items-center gap-1"><MapPin size={11} />{exam.examLocation || 'حضوري'}</span>
-                                    <span className="flex items-center gap-1"><User size={11} />{exam.recordedBy || 'المدير'}</span>
-                                    <span className="text-gray-300 hidden sm:inline">|</span>
-                                    <span className="sm:mr-0 mr-auto">{exam.date}</span>
-                                </div>
-                            </div>
-                        );
-                    })}
-
-                {(!exams || exams.filter((e: any) => e.courseId).length === 0) && (
-                    <div className="text-center py-8 sm:py-10 text-gray-400 text-xs font-bold">لا توجد اختبارات مسجلة</div>
-                )}
-            </div>
         </div>
     );
 }
